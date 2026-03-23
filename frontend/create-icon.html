@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generar Icono TrakCare</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        canvas {
+            border: 2px solid #ccc;
+            display: block;
+            margin: 20px auto;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .instructions {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Generador de Icono TrakCare Offline</h1>
+
+    <p>Este generador crea un icono básico de 256x256 píxeles para la aplicación.</p>
+
+    <canvas id="iconCanvas" width="256" height="256"></canvas>
+
+    <button onclick="downloadIcon()">Descargar Icono (PNG)</button>
+
+    <div class="instructions">
+        <h3>Instrucciones:</h3>
+        <ol>
+            <li>Haga click en "Descargar Icono (PNG)" para obtener el archivo PNG</li>
+            <li>Convierta el PNG a ICO usando:
+                <ul>
+                    <li><a href="https://convertio.co/es/png-ico/" target="_blank">Convertio Online</a></li>
+                    <li>O ImageMagick: <code>convert icon.png -define icon:auto-resize=256,128,64,48,32,16 icon.ico</code></li>
+                </ul>
+            </li>
+            <li>Guarde el archivo ICO como: <code>frontend/electron/icon.ico</code></li>
+            <li>Recompile la aplicación Electron</li>
+        </ol>
+        <p><strong>Nota:</strong> Para una aplicación profesional, reemplace este icono con el logo oficial de TrakCare.</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('iconCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Fondo azul
+        ctx.fillStyle = '#0066cc';
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Borde redondeado
+        ctx.globalCompositeOperation = 'destination-in';
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 256, 256, 20);
+        ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Cruz médica en blanco
+        ctx.fillStyle = 'white';
+        // Vertical
+        ctx.fillRect(100, 50, 56, 156);
+        // Horizontal
+        ctx.fillRect(50, 100, 156, 56);
+
+        // Texto "TC"
+        ctx.font = 'bold 48px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('TC', 128, 200);
+
+        function downloadIcon() {
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'trakcare-icon.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+    </script>
+</body>
+</html>

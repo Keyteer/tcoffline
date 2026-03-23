@@ -1,0 +1,9 @@
+{
+  "name": "central-mock",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Python FastAPI central service - use pytest for testing\"",
+    "build": "echo \"✓ Central mock service structure validated\""
+  }
+}

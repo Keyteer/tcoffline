@@ -1,0 +1,162 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Arquitectura TrakCare Offline Local" id="arquitectura">
+    <mxGraphModel dx="1434" dy="844" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- TITLE -->
+        <mxCell id="title" value="&lt;b style=&quot;font-size: 18px&quot;&gt;Arquitectura TrakCare Offline Local v1.9.0&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="340" y="20" width="490" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- CLIENTE / NAVEGADOR -->
+        <mxCell id="browser" value="&lt;b&gt;Navegador Web&lt;/b&gt;&lt;br&gt;(http://localhost:5173)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="280" height="180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="react-app" value="&lt;b&gt;Frontend React + TypeScript&lt;/b&gt;&lt;br&gt;&lt;br&gt;• Vite + React Router&lt;br&gt;• Tailwind CSS&lt;br&gt;• Modo Oscuro/Claro&lt;br&gt;• i18n (ES/EN)&lt;br&gt;• Auth Context&lt;br&gt;• API Client (Fetch)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;verticalAlign=top;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="130" width="240" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- BACKEND LOCAL -->
+        <mxCell id="backend" value="&lt;b&gt;Backend FastAPI&lt;/b&gt;&lt;br&gt;(http://localhost:8000)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalAlign=top;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="480" y="100" width="280" height="400" as="geometry" />
+        </mxCell>
+
+        <mxCell id="fastapi-app" value="&lt;b&gt;FastAPI Application&lt;/b&gt;&lt;br&gt;&lt;br&gt;• CORS Middleware&lt;br&gt;• Language Middleware&lt;br&gt;• Basic Auth&lt;br&gt;• REST Endpoints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;verticalAlign=top;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="500" y="130" width="240" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="routers" value="&lt;b&gt;Routers&lt;/b&gt;&lt;br&gt;&lt;br&gt;• /auth - Autenticación&lt;br&gt;• /episodes - Episodios&lt;br&gt;• /notes - Notas clínicas&lt;br&gt;• /sync - Sincronización" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;verticalAlign=top;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="500" y="250" width="240" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="background-tasks" value="&lt;b&gt;Background Tasks&lt;/b&gt;&lt;br&gt;&lt;br&gt;• Health Check (8s)&lt;br&gt;• Downstream Sync (60s)&lt;br&gt;• Upstream Sync (10s)&lt;br&gt;• Outbox Processor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;align=left;verticalAlign=top;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="500" y="370" width="240" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- BASE DE DATOS LOCAL -->
+        <mxCell id="database" value="&lt;b&gt;SQLite Database&lt;/b&gt;&lt;br&gt;(local.db)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="480" y="540" width="280" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tables" value="&lt;b&gt;Tablas&lt;/b&gt;&lt;br&gt;&lt;br&gt;• &lt;b&gt;users&lt;/b&gt; - Usuarios del sistema&lt;br&gt;• &lt;b&gt;episodes&lt;/b&gt; - Episodios clínicos + JSON&lt;br&gt;• &lt;b&gt;clinical_notes&lt;/b&gt; - Notas clínicas&lt;br&gt;• &lt;b&gt;outbox_events&lt;/b&gt; - Cola de eventos&lt;br&gt;• &lt;b&gt;sync_state&lt;/b&gt; - Estado de sync&lt;br&gt;&lt;br&gt;&lt;b&gt;ORM:&lt;/b&gt; SQLAlchemy&lt;br&gt;&lt;b&gt;Migraciones:&lt;/b&gt; Alembic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="500" y="570" width="240" height="190" as="geometry" />
+        </mxCell>
+
+        <!-- SERVIDOR CENTRAL -->
+        <mxCell id="central-server" value="&lt;b&gt;Servidor Central TrakCare&lt;/b&gt;&lt;br&gt;(demo01.tcdb.vtas.cl.intersystems.com)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;verticalAlign=top;fontSize=12;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="880" y="200" width="260" height="300" as="geometry" />
+        </mxCell>
+
+        <mxCell id="central-endpoints" value="&lt;b&gt;API REST Endpoints&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;GET&lt;/b&gt; /apirest/obtenerDatos&lt;br&gt;• Retorna episodios completos&lt;br&gt;• Filtros personalizados por usuario&lt;br&gt;&lt;br&gt;&lt;b&gt;POST&lt;/b&gt; /apirest/hl7inbound&lt;br&gt;• Recibe mensajes HL7 v2.3&lt;br&gt;• ADT^A28 - Info paciente&lt;br&gt;• ADT^A01 - Admisión&lt;br&gt;• ORU^R01 - Notas clínicas&lt;br&gt;&lt;br&gt;&lt;b&gt;Auth:&lt;/b&gt; Basic (demo:demodemo)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#10739e;align=left;verticalAlign=top;fontSize=11;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="900" y="230" width="220" height="250" as="geometry" />
+        </mxCell>
+
+        <!-- CONEXIONES -->
+
+        <!-- Browser -> Backend -->
+        <mxCell id="conn1" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#0066CC;" edge="1" parent="1" source="browser" target="backend">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="380" y="340" as="sourcePoint" />
+            <mxPoint x="430" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="conn1-label" value="&lt;b&gt;HTTP REST&lt;/b&gt;&lt;br&gt;JSON" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fillColor=#ffffff;strokeColor=none;" vertex="1" connectable="0" parent="conn1">
+          <mxGeometry x="-0.1" y="-2" relative="1" as="geometry">
+            <mxPoint x="5" y="-12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Backend -> Database -->
+        <mxCell id="conn2" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#009900;" edge="1" parent="1" source="backend" target="database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="580" y="590" as="sourcePoint" />
+            <mxPoint x="630" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="conn2-label" value="&lt;b&gt;SQLAlchemy ORM&lt;/b&gt;&lt;br&gt;CRUD Operations" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fillColor=#ffffff;strokeColor=none;" vertex="1" connectable="0" parent="conn2">
+          <mxGeometry x="-0.1" y="-2" relative="1" as="geometry">
+            <mxPoint x="75" y="-5" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Backend -> Central (Downstream) -->
+        <mxCell id="conn3" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#CC6600;dashed=1;" edge="1" parent="1" source="backend" target="central-server">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="780" y="400" as="sourcePoint" />
+            <mxPoint x="830" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="conn3-label" value="&lt;b&gt;DOWNSTREAM&lt;/b&gt;&lt;br&gt;GET /obtenerDatos&lt;br&gt;cada 60s" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" connectable="0" parent="conn3">
+          <mxGeometry x="-0.1" y="-2" relative="1" as="geometry">
+            <mxPoint x="5" y="-25" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Backend -> Central (Upstream) -->
+        <mxCell id="conn4" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.7;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#CC0000;dashed=1;" edge="1" parent="1" source="backend" target="central-server">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="780" y="450" as="sourcePoint" />
+            <mxPoint x="830" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="conn4-label" value="&lt;b&gt;UPSTREAM&lt;/b&gt;&lt;br&gt;POST /hl7inbound&lt;br&gt;HL7 v2.3 Messages&lt;br&gt;cada 10s" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" connectable="0" parent="conn4">
+          <mxGeometry x="-0.1" y="-2" relative="1" as="geometry">
+            <mxPoint x="5" y="30" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- COMPONENTES FRONTEND -->
+        <mxCell id="frontend-pages" value="&lt;b&gt;Páginas&lt;/b&gt;&lt;br&gt;• Login&lt;br&gt;• Episodes&lt;br&gt;• NewEpisode&lt;br&gt;• ClinicalNote" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1f5fe;strokeColor=#01579b;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="80" y="310" width="120" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="frontend-components" value="&lt;b&gt;Componentes&lt;/b&gt;&lt;br&gt;• Header&lt;br&gt;• EpisodesTable&lt;br&gt;• PatientHistory&lt;br&gt;• UserSettings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#880e4f;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="220" y="310" width="140" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- PATRONES ARQUITECTÓNICOS -->
+        <mxCell id="patterns" value="&lt;b&gt;Patrones de Diseño&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9e6;strokeColor=#cc9900;verticalAlign=top;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="80" y="430" width="280" height="350" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pattern1" value="&lt;b&gt;1. Arquitectura de Tabla Única&lt;/b&gt;&lt;br&gt;• Campos indexados para búsquedas&lt;br&gt;• JSON completo en data_json&lt;br&gt;• Antecedentes incluidos en JSON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cc9900;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="460" width="240" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pattern2" value="&lt;b&gt;2. Patrón Outbox&lt;/b&gt;&lt;br&gt;• Garantiza entrega de mensajes&lt;br&gt;• Reintentos automáticos (max 5)&lt;br&gt;• Procesamiento asíncrono" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cc9900;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="535" width="240" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pattern3" value="&lt;b&gt;3. Sincronización Bidireccional&lt;/b&gt;&lt;br&gt;• Downstream: Central → Local (GET)&lt;br&gt;• Upstream: Local → Central (POST HL7)&lt;br&gt;• Actualización automática de IDs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cc9900;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="610" width="240" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pattern4" value="&lt;b&gt;4. Offline-First&lt;/b&gt;&lt;br&gt;• Operación autónoma sin conexión&lt;br&gt;• Sincronización automática al reconectar&lt;br&gt;• Almacenamiento local completo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cc9900;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="100" y="685" width="240" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- TECNOLOGÍAS -->
+        <mxCell id="tech-stack" value="&lt;b&gt;Stack Tecnológico&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;verticalAlign=top;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="880" y="540" width="260" height="240" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tech-backend" value="&lt;b&gt;Backend&lt;/b&gt;&lt;br&gt;• Python 3.12+&lt;br&gt;• FastAPI&lt;br&gt;• SQLAlchemy&lt;br&gt;• Alembic&lt;br&gt;• Pydantic&lt;br&gt;• hl7apy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e7d32;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="900" y="570" width="100" height="190" as="geometry" />
+        </mxCell>
+
+        <mxCell id="tech-frontend" value="&lt;b&gt;Frontend&lt;/b&gt;&lt;br&gt;• Node.js 18+&lt;br&gt;• React 18&lt;br&gt;• TypeScript&lt;br&gt;• Vite&lt;br&gt;• Tailwind CSS&lt;br&gt;• React Router" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e7d32;align=left;verticalAlign=top;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="570" width="100" height="190" as="geometry" />
+        </mxCell>
+
+        <!-- LEYENDA -->
+        <mxCell id="legend" value="&lt;b&gt;Leyenda&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;verticalAlign=top;fontSize=11;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="80" y="80" width="280" height="0" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

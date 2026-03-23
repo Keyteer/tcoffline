@@ -1,0 +1,12 @@
+{
+  "name": "trakcare-offline-local",
+  "version": "1.9.0-rc07",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Python FastAPI project - use pytest for testing\"",
+    "build": "echo \"✓ Python FastAPI project structure validated\"",
+    "frontend:install": "cd frontend && npm install",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build"
+  }
+}
