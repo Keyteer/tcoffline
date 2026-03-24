@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
 
     CENTRAL_URL: str = "http://demo01.tcdb.vtas.cl.intersystems.com"
-    CENTRAL_API_ENDPOINT: str = "/demo01/tcoffline/obtenerDatos"
+    CENTRAL_API_ENDPOINT: str = "/demo01/tcoffline/getData"
     CENTRAL_HL7_ENDPOINT: str = "/demo01/tcoffline/hl7inbound"
     CENTRAL_API_USERNAME: str = "demo"
     CENTRAL_API_PASSWORD: str = "demodemo"
