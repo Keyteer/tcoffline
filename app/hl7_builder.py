@@ -275,7 +275,7 @@ class HL7MessageBuilder:
         obs_dt = self._format_datetime(observation_datetime) if observation_datetime else ""
 
         obx = (
-            f"OBX|{set_id}|{value_type}|{observation_id}^{observation_text}^LOCAL||{escaped_value}||||||F|||{obs_dt}"
+            f"OBX|{set_id}|{value_type}|{observation_id}^{observation_text}^LOCAL||  {escaped_value}||||||F|||{obs_dt}"
         )
         return obx
 
