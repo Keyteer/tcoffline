@@ -191,7 +191,7 @@ REM ============================
 REM Crear entorno virtual
 REM ============================
 echo Creando entorno virtual de Python...
-%PYTHON_PATH% -m venv "%INSTALL_PATH%\venv"
+"%PYTHON_PATH%" -m venv "%INSTALL_PATH%\venv"
 if %errorlevel% neq 0 (
     echo ERROR: No se pudo crear el entorno virtual.
     pause

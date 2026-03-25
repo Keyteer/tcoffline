@@ -265,7 +265,7 @@ export function PatientHistorySidebar({ episodeData }: PatientHistorySidebarProp
                             </p>
                           </div>
                           <p className="text-xs text-gray-700 dark:text-gray-300 mb-1">
-                            <span className="font-medium">{t.patientHistory.responsible}:</span> {registro.Responsable || 'N/A'}
+                            <span className="font-medium">{t.patientHistory.responsible}:</span> {registro.Profesional || 'N/A'}
                           </p>
                           <p className="text-sm text-gray-900 dark:text-gray-50">
                             {truncateText(registro.Nota, 100)}
@@ -528,7 +528,7 @@ export function PatientHistorySidebar({ episodeData }: PatientHistorySidebarProp
 
               <div>
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{t.patientHistory.responsible}</p>
-                <p className="text-sm text-gray-900 dark:text-gray-50">{selectedNota.Responsable}</p>
+                <p className="text-sm text-gray-900 dark:text-gray-50">{selectedNota.Profesional}</p>
               </div>
 
               <div>

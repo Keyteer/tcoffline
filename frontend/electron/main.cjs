@@ -67,6 +67,9 @@ function createWindow() {
     }
   });
 
+  mainWindow.setMenuBarVisibility(false);
+  mainWindow.removeMenu();
+
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
     console.error('did-fail-load:', { errorCode, errorDescription, validatedURL });
     mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(`
@@ -126,8 +129,8 @@ function createWindow() {
     }
   ];
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
-
+  //Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
+  Menu.setApplicationMenu(null);
   mainWindow.on('closed', () => {
     mainWindow = null;
   });

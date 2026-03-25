@@ -119,7 +119,7 @@ export interface AlergiaHistorica {
 
 export interface RegistroOffline {
   FechaHora: string;
-  Responsable?: string;
+  Profesional?: string;
   Nota?: string;
 }
 
