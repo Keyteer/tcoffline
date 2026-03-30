@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import Optional
+from app.db import SessionLocal
+from app import models
 import uuid
 
 
@@ -231,9 +233,20 @@ class HL7MessageBuilder:
             test_name: Test/observation name
             observation_datetime: Date/time of observation
         """
+
+        db = SessionLocal()
+        most_recent_user = db.query(models.User).filter(
+                models.User.active == True,
+                models.User.last_login.isnot(None)
+            ).order_by(models.User.last_login.desc()).first()
+        
+        s=most_recent_user.filtros
+        user = dict(x.split('=') for x in s.split('&')).get('user')
+
+        
         obs_dt = self._format_datetime(observation_datetime) if observation_datetime else self._generate_timestamp()
 
-        obr = f"OBR|{set_id}||{test_code}^{test_name}^LOCAL|||{obs_dt}|{obs_dt}"
+        obr = f"OBR|{set_id}||{test_code}^{test_name}^LOCAL|||{obs_dt}|{obs_dt}|||||||||||||||||||||||||{user}"
         return obr
 
     def build_obx_segment(

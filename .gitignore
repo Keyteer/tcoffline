@@ -6,6 +6,7 @@ dist-electron
 .DS_Store
 Thumbs.db
 .vscode
+.bolt
 venv/
 __pycache__/
 *.pyc
