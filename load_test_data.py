@@ -345,7 +345,7 @@ def load_test_data():
                     estado=ep_data['Estado'],
                     profesional=ep_data['Profesional'],
                     motivo_consulta=ep_data['Antecedentes']['Encuentros'][0]['MotivoConsulta'] if ep_data['Antecedentes']['Encuentros'] else '',
-                    data_json=json.dumps(ep_data, ensure_ascii=False),
+                    data_json=ep_data,
                     synced_flag=True  # Mark as synced since it's test data
                 )
                 db.add(episode)

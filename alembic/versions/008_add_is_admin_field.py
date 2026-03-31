@@ -20,7 +20,7 @@ down_revision = '007'
 
 def upgrade():
     with op.batch_alter_table('users') as batch_op:
-        batch_op.add_column(sa.Column('is_admin', sa.Boolean(), server_default='0', nullable=False))
+        batch_op.add_column(sa.Column('is_admin', sa.Boolean(), server_default=sa.text('false'), nullable=False))
 
 
 def downgrade():

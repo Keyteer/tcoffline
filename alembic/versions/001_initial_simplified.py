@@ -75,7 +75,7 @@ def upgrade():
         sa.Column('data_json', sa.Text(), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False),
-        sa.Column('synced_flag', sa.Boolean(), server_default='0', nullable=False),
+        sa.Column('synced_flag', sa.Boolean(), server_default=sa.text('false'), nullable=False),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_episodes_mrn', 'episodes', ['mrn'])
@@ -89,7 +89,7 @@ def upgrade():
         sa.Column('author_user_id', sa.Integer(), nullable=False),
         sa.Column('note_text', sa.Text(), nullable=False),
         sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
-        sa.Column('synced_flag', sa.Boolean(), server_default='0', nullable=False),
+        sa.Column('synced_flag', sa.Boolean(), server_default=sa.text('false'), nullable=False),
         sa.ForeignKeyConstraint(['episode_id'], ['episodes.id'], ),
         sa.ForeignKeyConstraint(['author_user_id'], ['users.id'], ),
         sa.PrimaryKeyConstraint('id')

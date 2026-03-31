@@ -1,14 +1,32 @@
 services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: tcoffline
+      POSTGRES_PASSWORD: tcoffline
+      POSTGRES_DB: tcoffline
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tcoffline"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build: .
     ports:
       - "8000:8000"
-    volumes:
-      - tcoffline-data:/data
     environment:
-      - DATABASE_URL=sqlite:////data/local.db
+      - DATABASE_URL=postgresql://tcoffline:tcoffline@db:5432/tcoffline
       - ENVIRONMENT=production
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
-  tcoffline-data:
+  pgdata:

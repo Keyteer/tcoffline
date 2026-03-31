@@ -71,7 +71,7 @@ class EpisodeCreate(BaseModel):
     estado: Optional[str] = None
     profesional: Optional[str] = None
     motivo_consulta: Optional[str] = None
-    data_json: str
+    data_json: dict
 
     @field_validator('fecha_nacimiento', 'fecha_atencion', mode='before')
     @classmethod
@@ -96,12 +96,12 @@ class EpisodeUpdate(BaseModel):
     estado: Optional[str] = None
     profesional: Optional[str] = None
     motivo_consulta: Optional[str] = None
-    data_json: Optional[str] = None
+    data_json: Optional[dict] = None
 
 
 class Episode(EpisodeBase):
     id: int
-    data_json: str
+    data_json: dict
     created_at: datetime
     updated_at: datetime
     synced_flag: bool

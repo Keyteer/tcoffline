@@ -271,7 +271,7 @@ class CentralDataSync:
                 existing.estado = item.get("Estado")
                 existing.profesional = item.get("Profesional")
                 existing.motivo_consulta = item.get("MotivoConsulta")
-                existing.data_json = json.dumps(item, ensure_ascii=False)
+                existing.data_json = item
                 existing.synced_flag = True
                 logger.debug(f"Updated existing episode: {num_episodio}")
             else:
@@ -291,7 +291,7 @@ class CentralDataSync:
                     estado=item.get("Estado"),
                     profesional=item.get("Profesional"),
                     motivo_consulta=item.get("MotivoConsulta"),
-                    data_json=json.dumps(item, ensure_ascii=False),
+                    data_json=item,
                     synced_flag=True
                 )
                 db.add(episode)

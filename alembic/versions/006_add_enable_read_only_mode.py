@@ -22,7 +22,7 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('users') as batch_op:
-        batch_op.add_column(sa.Column('enable_read_only_mode', sa.Boolean(), nullable=False, server_default='1'))
+        batch_op.add_column(sa.Column('enable_read_only_mode', sa.Boolean(), nullable=False, server_default=sa.text('true')))
 
 
 def downgrade():

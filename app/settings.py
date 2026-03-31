@@ -2,7 +2,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "sqlite:///./local.db"
+    DATABASE_URL: str = "postgresql://tcoffline:tcoffline@localhost:5432/tcoffline"
     ENVIRONMENT: str = "development"
 
     CENTRAL_URL: str = "http://demo01.tcdb.vtas.cl.intersystems.com"

@@ -1,5 +1,6 @@
 from sqlalchemy import String, Integer, DateTime, Boolean, Text, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 from app.db import Base
 from passlib.context import CryptContext
@@ -60,7 +61,7 @@ class Episode(Base):
     profesional: Mapped[str] = mapped_column(String(200), nullable=True)
     motivo_consulta: Mapped[str] = mapped_column(Text, nullable=True)
 
-    data_json: Mapped[str] = mapped_column(Text, nullable=False)
+    data_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
@@ -70,11 +71,13 @@ class Episode(Base):
 
     def get_json_data(self) -> dict:
         """Retorna el JSON completo parseado"""
-        return json.loads(self.data_json)
+        if isinstance(self.data_json, str):
+            return json.loads(self.data_json)
+        return self.data_json
 
     def set_json_data(self, data: dict):
         """Actualiza el JSON completo"""
-        self.data_json = json.dumps(data, ensure_ascii=False)
+        self.data_json = data
 
 
 class ClinicalNote(Base):

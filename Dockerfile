@@ -21,12 +21,9 @@ COPY alembic.ini .
 COPY init_demo_users.py .
 COPY entrypoint.sh .
 
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
-# Create directory for SQLite database (when using SQLite)
-RUN mkdir -p /data
-
-ENV DATABASE_URL="sqlite:////data/local.db"
+ENV DATABASE_URL="postgresql://tcoffline:tcoffline@db:5432/tcoffline"
 
 EXPOSE 8000
 
