@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import httpx
+import socket
+import platform
 from app import models, schemas
 from app.db import get_db
 from app.auth_utils import get_current_active_user, get_current_admin_user, get_optional_current_user
@@ -15,6 +17,27 @@ router = APIRouter(tags=["general"])
 def health_check(request: Request):
     lang = get_lang(request)
     return {"status": "healthy", "service": "trakcare_offline_local", "language": lang}
+
+
+@router.get("/discovery")
+def discovery(request: Request):
+    """Public endpoint for clients to discover and identify this server."""
+    hostname = socket.gethostname()
+    try:
+        local_ip = socket.gethostbyname(hostname)
+    except socket.gaierror:
+        local_ip = "127.0.0.1"
+
+    return {
+        "service": "trakcare_offline",
+        "name": settings.SERVER_NAME,
+        "version": "2.0.0",
+        "hostname": hostname,
+        "ip": local_ip,
+        "port": 8000,
+        "platform": platform.system(),
+        "auth_methods": ["jwt", "basic"],
+    }
 
 
 @router.get("/health/central")

@@ -1,10 +1,56 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import models, schemas
-from app.auth_utils import get_current_active_user, get_current_admin_user
+from app.auth_utils import (
+    get_current_active_user, get_current_admin_user,
+    authenticate_user, create_access_token, create_refresh_token, decode_token,
+)
 from app.db import get_db
+from jose import JWTError
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.post("/login", response_model=schemas.TokenResponse)
+def login(body: schemas.LoginRequest, db: Session = Depends(get_db)):
+    """Authenticate with username/password, receive JWT tokens."""
+    user = authenticate_user(db, body.username, body.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
+    if not user.active:
+        raise HTTPException(status_code=403, detail="Inactive user")
+
+    token_data = {"sub": user.username}
+    return schemas.TokenResponse(
+        access_token=create_access_token(token_data),
+        refresh_token=create_refresh_token(token_data),
+    )
+
+
+@router.post("/refresh", response_model=schemas.TokenResponse)
+def refresh_token(body: schemas.RefreshRequest, db: Session = Depends(get_db)):
+    """Exchange a valid refresh token for a new token pair."""
+    try:
+        payload = decode_token(body.refresh_token)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid token type")
+
+    username: str | None = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user or not user.active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+
+    token_data = {"sub": user.username}
+    return schemas.TokenResponse(
+        access_token=create_access_token(token_data),
+        refresh_token=create_refresh_token(token_data),
+    )
 
 
 @router.get("/me", response_model=schemas.User)

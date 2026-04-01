@@ -22,7 +22,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS.split(",") if settings.CORS_ORIGINS != "*" else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,14 +40,22 @@ async def add_language_header(request: Request, call_next):
 
 @app.on_event("startup")
 async def startup_event():
-    """Start background tasks and initial sync on application startup"""
+    """Start background tasks, mDNS advertisement, and initial sync on application startup"""
     from app.background_tasks import start_background_tasks
     from app.sync_service import sync_from_central
     from app.db import SessionLocal
     from app import models
+    from app.mdns_service import start_mdns
     import logging
 
     logger = logging.getLogger(__name__)
+
+    # Start mDNS advertisement if enabled
+    if settings.MDNS_ENABLED:
+        try:
+            start_mdns(settings.SERVER_NAME)
+        except Exception as e:
+            logger.warning(f"Failed to start mDNS advertisement: {e}")
 
     logger.info("Resetting retry counts for pending outbox events...")
     db = SessionLocal()
@@ -88,6 +96,15 @@ async def startup_event():
         db.close()
 
     asyncio.create_task(start_background_tasks())
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up mDNS on shutdown."""
+    from app.mdns_service import stop_mdns
+    if settings.MDNS_ENABLED:
+        stop_mdns()
+
 
 app.include_router(general.router)
 app.include_router(auth.router)

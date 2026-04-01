@@ -23,7 +23,7 @@ export function Login() {
     try {
       const user = await api.verifyCredentials({ username, password });
 
-      auth.setCredentials(username, password);
+      // Tokens are already stored by verifyCredentials via auth.setTokens
       auth.setUser({
         username: user.username,
         role: user.role,

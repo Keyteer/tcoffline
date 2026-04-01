@@ -23,6 +23,30 @@ class APIError extends Error {
   }
 }
 
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  const refreshToken = auth.getRefreshToken();
+  if (!refreshToken) return false;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) return false;
+
+    const data = await response.json();
+    auth.setTokens(data.access_token, data.refresh_token);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function fetchWithAuth(
   endpoint: string,
   options: RequestInit = {}
@@ -38,10 +62,34 @@ async function fetchWithAuth(
     headers['Authorization'] = authHeader;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  let response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers,
   });
+
+  // If 401, attempt a single token refresh and retry
+  if (response.status === 401 && auth.getRefreshToken()) {
+    if (!isRefreshing) {
+      isRefreshing = true;
+      refreshPromise = tryRefreshToken().finally(() => {
+        isRefreshing = false;
+        refreshPromise = null;
+      });
+    }
+
+    const refreshed = await (refreshPromise ?? Promise.resolve(false));
+
+    if (refreshed) {
+      const newAuthHeader = auth.getAuthHeader();
+      if (newAuthHeader) {
+        headers['Authorization'] = newAuthHeader;
+      }
+      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers,
+      });
+    }
+  }
 
   if (response.status === 401) {
     auth.logout();
@@ -66,21 +114,27 @@ async function fetchWithAuth(
 
 export const api = {
   async verifyCredentials(credentials: LoginRequest): Promise<User> {
-    const encoded = btoa(`${credentials.username}:${credentials.password}`);
-
-    const response = await fetch(`${API_BASE_URL}/auth/me`, {
-      headers: {
-        'Authorization': `Basic ${encoded}`,
-        'Content-Type': 'application/json',
-      },
+    // Authenticate via JWT login endpoint
+    const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: credentials.username,
+        password: credentials.password,
+      }),
     });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Login failed' }));
-      throw new APIError(response.status, error.detail || 'Login failed');
+    if (!loginResponse.ok) {
+      const error = await loginResponse.json().catch(() => ({ detail: 'Login failed' }));
+      throw new APIError(loginResponse.status, error.detail || 'Login failed');
     }
 
-    return response.json();
+    const tokenData = await loginResponse.json();
+    auth.setTokens(tokenData.access_token, tokenData.refresh_token);
+
+    // Fetch the current user profile with the new token
+    const userResponse = await fetchWithAuth('/auth/me');
+    return userResponse.json();
   },
 
   async getCurrentUser(): Promise<User> {

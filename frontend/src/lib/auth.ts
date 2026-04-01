@@ -1,37 +1,42 @@
 import type { User } from '../types';
 
-const CREDENTIALS_KEY = 'trakcare_credentials';
+const ACCESS_TOKEN_KEY = 'trakcare_access_token';
+const REFRESH_TOKEN_KEY = 'trakcare_refresh_token';
 const USER_KEY = 'trakcare_user';
+
+// Legacy key — kept only for migration on first load
+const LEGACY_CREDENTIALS_KEY = 'trakcare_credentials';
 
 export interface StoredUser {
   username: string;
   role: string;
 }
 
-export interface StoredCredentials {
-  username: string;
-  password: string;
-}
-
 export const auth = {
-  getCredentials(): StoredCredentials | null {
-    const creds = localStorage.getItem(CREDENTIALS_KEY);
-    return creds ? JSON.parse(creds) : null;
+  getAccessToken(): string | null {
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
   },
 
-  setCredentials(username: string, password: string): void {
-    localStorage.setItem(CREDENTIALS_KEY, JSON.stringify({ username, password }));
+  getRefreshToken(): string | null {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
 
-  removeCredentials(): void {
-    localStorage.removeItem(CREDENTIALS_KEY);
+  setTokens(accessToken: string, refreshToken: string): void {
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    // Clean up any legacy credentials
+    localStorage.removeItem(LEGACY_CREDENTIALS_KEY);
+  },
+
+  removeTokens(): void {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
   },
 
   getAuthHeader(): string | null {
-    const creds = this.getCredentials();
-    if (!creds) return null;
-    const encoded = btoa(`${creds.username}:${creds.password}`);
-    return `Basic ${encoded}`;
+    const token = this.getAccessToken();
+    if (token) return `Bearer ${token}`;
+    return null;
   },
 
   getUser(): StoredUser | null {
@@ -56,11 +61,11 @@ export const auth = {
   },
 
   isAuthenticated(): boolean {
-    return !!this.getCredentials();
+    return !!this.getAccessToken();
   },
 
   logout(): void {
-    this.removeCredentials();
+    this.removeTokens();
     this.removeUser();
     sessionStorage.clear();
   }
