@@ -262,6 +262,7 @@ export const lang_en: TranslationKeys = {
     'Urgencia': 'Emergency',
     'Ambulatorio': 'Outpatient',
     'Hospitalizado': 'Inpatient',
+    'Pabellón': 'Operating Room',
     'Emergencia': 'Emergency',
   },
 

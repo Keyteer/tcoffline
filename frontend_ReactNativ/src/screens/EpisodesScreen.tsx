@@ -297,7 +297,7 @@ export function EpisodesScreen({ navigation }: Props) {
                 onPress={() => setActiveTab(tab.id)}
               >
                 <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
-                  {tab.label}
+                  {(t.episodeTypes as Record<string, string>)[tab.label] || tab.label}
                 </Text>
               </TouchableOpacity>
             ))}

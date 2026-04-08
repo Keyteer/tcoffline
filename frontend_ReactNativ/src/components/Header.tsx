@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { auth } from '../lib/auth';
-import { getServerUrlSync } from '../lib/serverConfig';
 import { UserSettingsModal } from './UserSettingsModal';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -21,8 +20,9 @@ export function Header({ navigation }: Props) {
   const { theme, toggleTheme, colors } = useTheme();
   const { language, setLanguage, t } = useLanguage();
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const langButtonRef = useRef<View>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
   const handleLogout = async () => {
     await auth.logout();
@@ -38,12 +38,23 @@ export function Header({ navigation }: Props) {
       paddingTop: 48,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
+    },
+    topRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'center',
       alignItems: 'center',
+      minHeight: 28,
+    },
+    bottomRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      marginTop: 10,
+      gap: 8,
     },
     left: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     titleText: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+    statusWrap: { position: 'absolute', right: 0 },
     badge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -57,7 +68,6 @@ export function Header({ navigation }: Props) {
     badgeText: { fontSize: 11, fontWeight: '700' },
     badgeOnlineText: { color: colors.badgeOnlineText },
     badgeOfflineText: { color: colors.badgeOfflineText },
-    right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     langButton: {
       paddingHorizontal: 10,
       paddingVertical: 6,
@@ -67,46 +77,21 @@ export function Header({ navigation }: Props) {
       borderColor: colors.borderSecondary,
     },
     langText: { fontSize: 12, fontWeight: '700', color: colors.text },
-    themeButton: { padding: 8 },
+    themeButton: { padding: 8, marginRight: 'auto' },
     themeText: { fontSize: 18 },
     userButton: { paddingHorizontal: 8, paddingVertical: 4 },
     userName: { fontSize: 13, fontWeight: '500', color: colors.text },
     userRole: { fontSize: 11, color: colors.textSecondary },
-    logoutButton: {
-      backgroundColor: colors.surfaceSecondary,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 6,
-    },
-    logoutText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
-    serverButton: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      backgroundColor: colors.surfaceSecondary,
-      borderRadius: 6,
-      borderWidth: 1,
-      borderColor: colors.borderSecondary,
-    },
-    serverButtonText: { fontSize: 11, color: colors.textSecondary },
-    serverUrl: { fontSize: 10, color: colors.textSecondary, fontWeight: '600' },
     // Dropdown
     dropdownOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: 90,
+      flex: 1,
     },
     langDropdown: {
       position: 'absolute',
-      top: 90,
-      right: 120,
       backgroundColor: colors.card,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: colors.border,
-      zIndex: 100,
       elevation: 10,
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 2 },
@@ -124,21 +109,31 @@ export function Header({ navigation }: Props) {
   return (
     <>
       <View style={styles.header}>
-        <View style={styles.left}>
+        <View style={styles.topRow}>
           <Text style={styles.titleText}>TrakCare Offline</Text>
-          <View style={[styles.badge, isOnline ? styles.badgeOnline : styles.badgeOffline]}>
-            <View style={[styles.badgeDot, { backgroundColor: isOnline ? '#22C55E' : '#EF4444' }]} />
-            <Text style={[styles.badgeText, isOnline ? styles.badgeOnlineText : styles.badgeOfflineText]}>
-              {isOnline ? 'ONLINE' : 'OFFLINE'}
-            </Text>
+          <View style={[styles.left, styles.statusWrap]}>
+            <View style={[styles.badge, isOnline ? styles.badgeOnline : styles.badgeOffline]}>
+              <View style={[styles.badgeDot, { backgroundColor: isOnline ? '#22C55E' : '#EF4444' }]} />
+              <Text style={[styles.badgeText, isOnline ? styles.badgeOnlineText : styles.badgeOfflineText]}>
+                {isOnline ? 'ONLINE' : 'OFFLINE'}
+              </Text>
+            </View>
           </View>
         </View>
 
         {storedUser && (
-          <View style={styles.right}>
-            <TouchableOpacity style={styles.langButton} onPress={() => setShowLanguageMenu(!showLanguageMenu)}>
-              <Text style={styles.langText}>{language.toUpperCase()}</Text>
-            </TouchableOpacity>
+          <View style={styles.bottomRow}>
+
+            <View ref={langButtonRef} collapsable={false}>
+              <TouchableOpacity style={styles.langButton} onPress={() => {
+                langButtonRef.current?.measureInWindow((x, y, width, height) => {
+                  setMenuPosition({ top: y + height + 4, left: x });
+                  setShowLanguageMenu(true);
+                });
+              }}>
+                <Text style={styles.langText}>{language.toUpperCase()}</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
               <Text style={styles.themeText}>{theme === 'dark' ? '☀️' : '🌙'}</Text>
@@ -148,32 +143,22 @@ export function Header({ navigation }: Props) {
               <Text style={styles.userName}>{storedUser.username}</Text>
               <Text style={styles.userRole}>{storedUser.role}</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.serverButton}
-              onPress={() => navigation.navigate('ServerDiscovery')}
-            >
-              <Text style={styles.serverButtonText}>🖥</Text>
-              <Text style={styles.serverUrl} numberOfLines={1}>
-                {getServerUrlSync().replace(/^https?:\/\//, '')}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutText}>{t.header.logout}</Text>
-            </TouchableOpacity>
           </View>
         )}
       </View>
 
-      {showLanguageMenu && (
-        <>
-          <TouchableOpacity
-            style={styles.dropdownOverlay}
-            activeOpacity={1}
-            onPress={() => setShowLanguageMenu(false)}
-          />
-          <View style={styles.langDropdown}>
+      <Modal
+        visible={showLanguageMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowLanguageMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.dropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setShowLanguageMenu(false)}
+        >
+          <View style={[styles.langDropdown, { top: menuPosition.top, left: menuPosition.left }]}>
             {(['es', 'en'] as const).map((lang) => (
               <TouchableOpacity
                 key={lang}
@@ -194,8 +179,8 @@ export function Header({ navigation }: Props) {
               </TouchableOpacity>
             ))}
           </View>
-        </>
-      )}
+        </TouchableOpacity>
+      </Modal>
 
       {currentUser && (
         <UserSettingsModal
@@ -203,6 +188,7 @@ export function Header({ navigation }: Props) {
           onClose={() => setShowSettings(false)}
           user={currentUser}
           onUserUpdated={(user) => updateUser(user)}
+          onLogout={handleLogout}
         />
       )}
     </>

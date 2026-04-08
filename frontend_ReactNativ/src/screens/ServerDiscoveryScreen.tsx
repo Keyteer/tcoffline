@@ -17,16 +17,19 @@ import {
   getServerUrlSync,
 } from '../lib/serverConfig';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/types';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ServerDiscovery'>;
+  route: RouteProp<RootStackParamList, 'ServerDiscovery'>;
 };
 
-export function ServerDiscoveryScreen({ navigation }: Props) {
+export function ServerDiscoveryScreen({ navigation, route }: Props) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const d = t.serverDiscovery;
+  const skipAutoConnect = route.params?.skipAutoConnect === true;
 
   const [serverUrl, setUrl] = useState(getServerUrlSync());
   const [error, setError] = useState('');
@@ -51,8 +54,12 @@ export function ServerDiscoveryScreen({ navigation }: Props) {
     }
   }, [autoTrying]);
 
-  // On mount, try the current/default URL automatically
+  // On mount, try the current/default URL automatically (skip if user navigated here to change)
   useEffect(() => {
+    if (skipAutoConnect) {
+      setAutoTrying(false);
+      return;
+    }
     let cancelled = false;
 
     (async () => {

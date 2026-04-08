@@ -259,6 +259,7 @@ export const lang_es = {
     'Urgencia': 'Urgencia',
     'Ambulatorio': 'Ambulatorio',
     'Hospitalizado': 'Hospitalizado',
+    'Pabellón': 'Pabellón',
     'Emergencia': 'Emergencia',
   },
 

@@ -147,6 +147,20 @@ export function LoginScreen({ navigation }: Props) {
       fontSize: 16,
       fontWeight: '600',
     },
+    secondaryButton: {
+      borderRadius: 8,
+      paddingVertical: 12,
+      alignItems: 'center',
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: colors.borderSecondary,
+      backgroundColor: colors.surfaceSecondary,
+    },
+    secondaryButtonText: {
+      color: colors.text,
+      fontSize: 14,
+      fontWeight: '600',
+    },
     demoBox: {
       backgroundColor: colors.surfaceSecondary,
       borderRadius: 8,
@@ -320,6 +334,14 @@ export function LoginScreen({ navigation }: Props) {
             )}
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('ServerDiscovery', { skipAutoConnect: true })}
+            disabled={isLoading}
+          >
+            <Text style={styles.secondaryButtonText}>{t.serverDiscovery.changeServer}</Text>
+          </TouchableOpacity>
+
           <View style={styles.demoBox}>
             <Text style={styles.demoTitle}>
               {language === 'es' ? 'Credenciales de prueba:' : 'Test credentials:'}
@@ -364,10 +386,10 @@ export function LoginScreen({ navigation }: Props) {
 
               <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Tipos de Episodio</Text>
               {[
-                { label: 'Urgencia', bg: '#FEF2F2', border: '#FECACA', text: '#991B1B' },
-                { label: 'Hospitalizado', bg: '#FAF5FF', border: '#E9D5FF', text: '#6B21A8' },
-                { label: 'Ambulatorio', bg: '#F0FDF4', border: '#BBF7D0', text: '#166534' },
-                { label: 'Pabellón', bg: '#FFFBEB', border: '#FDE68A', text: '#92400E' },
+                { label: t.episodeTypes['Urgencia'], bg: '#FEF2F2', border: '#FECACA', text: '#991B1B' },
+                { label: t.episodeTypes['Hospitalizado'], bg: '#FAF5FF', border: '#E9D5FF', text: '#6B21A8' },
+                { label: t.episodeTypes['Ambulatorio'], bg: '#F0FDF4', border: '#BBF7D0', text: '#166534' },
+                { label: t.episodeTypes['Pabellón'], bg: '#FFFBEB', border: '#FDE68A', text: '#92400E' },
               ].map((type, idx) => (
                 <View
                   key={idx}

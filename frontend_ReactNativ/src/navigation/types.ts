@@ -1,5 +1,5 @@
 export type RootStackParamList = {
-  ServerDiscovery: undefined;
+  ServerDiscovery: { skipAutoConnect?: boolean } | undefined;
   Login: undefined;
   Episodes: undefined;
   NewEpisode: undefined;

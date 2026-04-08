@@ -21,9 +21,10 @@ interface UserSettingsModalProps {
   onClose: () => void;
   user: User;
   onUserUpdated: (user: User) => void;
+  onLogout: () => void | Promise<void>;
 }
 
-export function UserSettingsModal({ visible, onClose, user, onUserUpdated }: UserSettingsModalProps) {
+export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLogout }: UserSettingsModalProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'settings' | 'users'>('settings');
@@ -195,6 +196,16 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated }: Use
       borderBottomColor: colors.border,
     },
     headerTitle: { fontSize: 20, fontWeight: 'bold', color: colors.text },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    logoutButton: {
+      backgroundColor: colors.surfaceSecondary,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.borderSecondary,
+    },
+    logoutText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
     closeText: { fontSize: 22, color: colors.textSecondary },
     tabBar: {
       flexDirection: 'row',
@@ -341,9 +352,14 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated }: Use
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{t.userSettings.title}</Text>
-            <TouchableOpacity onPress={handleClose}>
-              <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+              <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+                <Text style={styles.logoutText}>{t.header.logout}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleClose}>
+                <Text style={styles.closeText}>✕</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Tabs (admin only) */}
