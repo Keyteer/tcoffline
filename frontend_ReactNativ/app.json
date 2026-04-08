@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "frontend_ReactNativ",
-    "slug": "frontend_ReactNativ",
+    "name": "TCOffline",
+    "slug": "TCOffline",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,7 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.frontend_ReactNativ"
+      "package": "com.anonymous.TCOffline"
     },
     "web": {
       "favicon": "./assets/favicon.png"

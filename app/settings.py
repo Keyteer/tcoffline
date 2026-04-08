@@ -28,9 +28,7 @@ class Settings(BaseSettings):
     # CORS settings
     CORS_ORIGINS: str = "*"
 
-    # Discovery / connectivity
     SERVER_NAME: str = "TrakCare Offline"
-    MDNS_ENABLED: bool = True
 
     class Config:
         env_file = ".env"

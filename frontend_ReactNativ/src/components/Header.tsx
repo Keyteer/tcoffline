@@ -5,6 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { auth } from '../lib/auth';
+import { getServerUrlSync } from '../lib/serverConfig';
 import { UserSettingsModal } from './UserSettingsModal';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -78,6 +79,16 @@ export function Header({ navigation }: Props) {
       borderRadius: 6,
     },
     logoutText: { fontSize: 12, color: colors.textSecondary, fontWeight: '500' },
+    serverButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.borderSecondary,
+    },
+    serverButtonText: { fontSize: 11, color: colors.textSecondary },
+    serverUrl: { fontSize: 10, color: colors.textSecondary, fontWeight: '600' },
     // Dropdown
     dropdownOverlay: {
       position: 'absolute',
@@ -136,6 +147,16 @@ export function Header({ navigation }: Props) {
             <TouchableOpacity style={styles.userButton} onPress={() => setShowSettings(true)}>
               <Text style={styles.userName}>{storedUser.username}</Text>
               <Text style={styles.userRole}>{storedUser.role}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.serverButton}
+              onPress={() => navigation.navigate('ServerDiscovery')}
+            >
+              <Text style={styles.serverButtonText}>🖥</Text>
+              <Text style={styles.serverUrl} numberOfLines={1}>
+                {getServerUrlSync().replace(/^https?:\/\//, '')}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>

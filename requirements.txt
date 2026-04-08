@@ -11,4 +11,3 @@ python-dotenv==1.0.0
 httpx==0.26.0
 faker==22.0.0
 python-jose[cryptography]==3.3.0
-zeroconf==0.131.0
