@@ -1,4 +1,4 @@
-# TrakCare Offline Local v1.9.0-rc07
+# TrakCare Offline Local
 
 Sistema offline para gestión de episodios clínicos con sincronización bidireccional con servidor central.
 
@@ -7,203 +7,117 @@ Sistema offline para gestión de episodios clínicos con sincronización bidirec
 - Gestión offline de episodios clínicos
 - Almacenamiento de JSON completo con antecedentes del paciente
 - Sincronización bidireccional automática con servidor central vía HL7
-- Interfaz web React + TypeScript con modo oscuro
-- Autenticación y autorización
+- Frontend móvil React Native (Android, iOS, Web) con modo oscuro
+- Backend containerizado (Docker + PostgreSQL)
+- Autenticación JWT con refresh tokens
 - Sistema de outbox para garantizar entrega de mensajes
+- Descubrimiento de servidor vía mDNS y endpoint `/discovery`
 - Soporte multiidioma (Español/English)
 
 ## Arquitectura
 
-El sistema utiliza una **arquitectura de tabla única** para máxima simplicidad:
-
-- Tabla `episodes` con campos indexados + JSON completo en `data_json`
-- Sincronización rápida mediante upsert
-- Historia completa del paciente incluida en el JSON (Antecedentes)
-- Queries eficientes con índices en campos clave
-- Patrón Outbox para sincronización confiable
+- **Backend**: FastAPI + SQLAlchemy 2.0 + PostgreSQL, containerizado con Docker
+- **Frontend**: React Native (Expo SDK 54) — Android, iOS, y Web
+- **Base de datos**: PostgreSQL 15 con JSONB para datos clínicos
+- **Sincronización**: HL7 v2.5 bidireccional (ADT^A28, ADT^A01, ORU^R01)
+- **Patrón Outbox** para sincronización confiable upstream
+- **mDNS** para descubrimiento automático del servidor en la red local
 
 ## Requisitos
 
+### Backend (Docker)
+- Docker y Docker Compose
+
+### Backend (desarrollo local)
 - Python 3.12+
+- PostgreSQL 15+
+
+### Frontend móvil
 - Node.js 18+
-- SQLite (incluido)
+- Expo Go (para desarrollo rápido) o Android Studio / Xcode (para builds nativos)
 
-## Instalación
+## Instalación y Uso
 
-### Para Usuarios Finales (Producción)
-
-Si desea instalar TrakCare Offline como aplicación de escritorio en Windows, consulte la **[Guía de Instalación Completa](INSTALLATION_GUIDE.md)** que incluye:
-
-- Instalación del backend como servicio de Windows
-- Instalación del frontend como aplicación Electron
-- Configuración completa del sistema
-- Solución de problemas
-
-### Para Desarrolladores (Desarrollo)
-
-#### Backend
-
-##### Windows
+### Backend con Docker (recomendado)
 
 ```bash
-setup-backend.bat
+docker compose up -d
 ```
 
-##### Linux/Mac
+Esto levanta:
+- **PostgreSQL 15** en puerto 5432
+- **Backend FastAPI** en puerto 8000 (aplica migraciones e inicializa usuarios demo automáticamente)
+
+Credenciales demo: `admin` / `admin123`, `demo` / `demo123`
+
+API Docs: http://localhost:8000/docs
+
+### Backend local (desarrollo)
 
 ```bash
-chmod +x setup-backend.sh
-./setup-backend.sh
-```
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # Linux/Mac
 
-El script automáticamente:
-1. Crea entorno virtual Python
-2. Instala todas las dependencias Python
-3. Crea archivo `.env` desde `.env.example`
-4. Crea la base de datos con migraciones Alembic
-5. Crea usuarios demo (admin/admin123, demo/demo123)
-
-### Frontend
-
-```bash
-cd frontend
-npm install --legacy-peer-deps
-```
-
-**Si encuentras errores de dependencias corruptas:**
-
-```bash
-cd frontend
-fix-dependencies.bat   # Windows
-# o ejecuta manualmente: rmdir /s /q node_modules && npm install --legacy-peer-deps
-```
-
-## Uso
-
-### Opción A: Aplicación Electron (Escritorio)
-
-Si deseas usar la aplicación de escritorio:
-
-#### 1. Compilar la aplicación Electron
-
-```bash
-cd frontend
-build-electron.bat  # Windows
-# o ./build-electron.sh en Linux/Mac
-```
-
-#### 2. Iniciar TrakCare Offline (Electron + Backend)
-
-**Opción fácil - Script automático:**
-```bash
-cd frontend
-iniciar-trakcare-electron.bat
-```
-
-Este script automáticamente:
-- Verifica si el backend está corriendo
-- Inicia el backend si es necesario
-- Lanza la aplicación Electron
-
-**⚠️ IMPORTANTE**: La aplicación Electron **REQUIERE** que el backend esté corriendo. Si ves pantalla negra, es porque el backend no está iniciado.
-
-**Documentación Electron:**
-- `frontend/INICIO_RAPIDO_ELECTRON.md` - Guía de inicio rápido
-- `frontend/README_ELECTRON.md` - Documentación completa
-- `frontend/SOLUCION_PANTALLA_NEGRA.md` - Solución al problema más común
-- `frontend/ELECTRON_TROUBLESHOOTING.md` - Resolución de problemas
-
-### Opción B: Desarrollo Web (Navegador)
-
-#### 1. Iniciar Backend
-
-```bash
-# Activar entorno virtual
-venv\Scripts\activate    # Windows
-source venv/bin/activate # Linux/Mac
-
-# Iniciar servidor
+pip install -r requirements.txt
+alembic upgrade head
+python init_demo_users.py
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-#### 2. Iniciar Frontend (en otra terminal)
+### Frontend React Native
+Ver [frontend_ReactNativ/DEVELOPMENT.md](frontend_ReactNativ/DEVELOPMENT.md) para instrucciones completas.
 
 ```bash
-cd frontend
-npm run dev
+cd frontend_ReactNativ
+npm install
+npx expo start
 ```
 
-#### 3. Acceder a la aplicación
+Escanea el código QR con Expo Go (Android) o la cámara (iOS).
 
-- **Frontend**: http://localhost:5173
-- **API Docs**: http://localhost:8000/docs
-
-**Credenciales demo:**
-- Admin: `admin` / `admin123`
-- Usuario: `demo` / `demo123`
-
-### 4. Cargar datos de prueba (opcional)
-
-Para cargar 10 pacientes de prueba con episodios completos (alergias, laboratorios, imágenes, etc.):
-
-#### Windows
-```bash
-load_test_data.bat
-```
-
-#### Linux/Mac
-```bash
-chmod +x load_test_data.sh
-./load_test_data.sh
-```
-
-Este script cargará:
-- 10 pacientes con RUT válido
-- 3-5 episodios anteriores por paciente
-- Alergias registradas
-- Resultados de laboratorio
-- Resultados de imágenes (Rx, TAC, Eco, RM)
-- Diagnósticos previos
-- Medicamentos habituales
-- Cirugías previas
-- Notas clínicas de registro offline
-
-Si necesitas aplicar migraciones a una base de datos existente:
+### Cargar datos de prueba (opcional)
 
 ```bash
-python3 apply_migrations.py
+python load_test_data.py
 ```
+
+Carga 10 pacientes de prueba con episodios, alergias, laboratorios, imágenes, etc.
 
 ## Estructura del Proyecto
 
 ```
 project/
-├── app/                    # Backend FastAPI
-│   ├── models.py          # Modelos SQLAlchemy
-│   ├── schemas.py         # Schemas Pydantic
-│   ├── main.py            # Aplicación principal
-│   ├── background_tasks.py # Tareas de sincronización
-│   ├── outbox_processor.py # Procesador de eventos
-│   ├── sync_service.py    # Servicio de sincronización
-│   ├── hl7_builder.py     # Generador de mensajes HL7
-│   ├── config/            # Configuración i18n
-│   └── routers/           # Endpoints REST
-├── frontend/              # Frontend React + TypeScript
+├── app/                       # Backend FastAPI
+│   ├── models.py             # Modelos SQLAlchemy (PostgreSQL)
+│   ├── schemas.py            # Schemas Pydantic
+│   ├── main.py               # Aplicación principal
+│   ├── background_tasks.py   # Tareas de sincronización
+│   ├── outbox_processor.py   # Procesador de eventos
+│   ├── sync_service.py       # Servicio de sincronización
+│   ├── hl7_builder.py        # Generador de mensajes HL7
+│   ├── mdns_service.py       # Descubrimiento mDNS
+│   ├── config/               # Configuración i18n
+│   └── routers/              # Endpoints REST
+├── frontend_ReactNativ/       # Frontend React Native (Expo)
 │   └── src/
-│       ├── pages/         # Páginas principales
-│       ├── components/    # Componentes reutilizables
-│       ├── contexts/      # Contextos (Theme, User)
-│       ├── config/        # Configuración i18n
-│       └── lib/           # Utilidades (API, Auth)
-├── alembic/               # Migraciones de BD
-└── central_mock/          # Mock del servidor central
+│       ├── screens/          # Pantallas principales
+│       ├── components/       # Componentes reutilizables
+│       ├── contexts/         # Contextos (Theme, User, Language)
+│       ├── config/           # Configuración i18n
+│       └── lib/              # Utilidades (API, Auth)
+├── alembic/                   # Migraciones de BD (PostgreSQL)
+├── central_mock/              # Mock del servidor central
+├── Dockerfile                 # Imagen Docker del backend
+├── docker-compose.yml         # Backend + PostgreSQL
+└── entrypoint.sh              # Migraciones + uvicorn
 ```
 
-## Modelo de Datos
+## Modelo de Datos (PostgreSQL)
 
 ### Tabla `episodes`
 
-Almacena episodios completos con JSON:
+Almacena episodios completos con JSONB:
 
 - `id`: ID autoincremental
 - `mrn`: Medical Record Number (indexado)
@@ -350,63 +264,50 @@ UPSTREAM_SYNC_INTERVAL=10
 
 ## Solución de Problemas
 
-### Error de login en el frontend
+### Backend no inicia (Docker)
 
-Si obtienes "credenciales incorrectas" al intentar iniciar sesión:
-
-1. Verifica que ejecutaste el setup del backend correctamente:
 ```bash
-setup-backend.bat  # Windows
-./setup-backend.sh # Linux/Mac
+# Ver logs del backend
+docker compose logs backend
+
+# Recrear contenedores
+docker compose down
+docker compose up -d --build
 ```
 
-2. Verifica que los usuarios se crearon correctamente:
+### Backend no inicia (local)
+
 ```bash
-# Debe mostrar "✓ Usuarios demo listos"
+# Verificar que PostgreSQL esté corriendo
+# Verificar DATABASE_URL en .env
+# Aplicar migraciones
+alembic upgrade head
 ```
 
-3. Si el problema persiste, elimina la base de datos y vuelve a ejecutar setup:
+### Error de login
+
+1. Verifica que el backend esté corriendo: `http://localhost:8000/health`
+2. Si usas Docker, los usuarios demo se crean automáticamente
+3. Si es local, ejecuta: `python init_demo_users.py`
+
+### Puerto 8000 en uso
+
 ```bash
-rm local.db
-setup-backend.bat  # Windows
-./setup-backend.sh # Linux/Mac
+# Windows
+netstat -ano | findstr :8000
+taskkill /PID <número> /F
+
+# Linux/Mac
+lsof -i :8000
+kill -9 <PID>
 ```
-
-### Logs de sincronización
-
-Para ver los logs detallados de sincronización (JSON de eventos):
-
-1. Inicia el backend en modo verbose
-2. Los logs JSON aparecen cada vez que hay eventos pendientes
-3. Busca en la consola las líneas que contienen "SENDING HL7 MESSAGE" y "Complete JSON Payload"
 
 ### La sincronización no funciona
 
-1. Verifica conectividad con el servidor central:
-```bash
-curl -u demo:demodemo http://servidor-central/apirest/externos/obtenerDatos
-```
-
-2. Revisa logs del backend en la consola donde corre uvicorn
-
-3. Verifica eventos pendientes en API docs: `GET /sync/stats`
-
-### Episodios no se envían
-
-Los episodios y notas se envían automáticamente mediante el sistema de outbox:
-
-1. Al crear un episodio, se genera un evento `episode_created`
-2. Al crear una nota, se genera un evento `clinical_note_created`
-3. El procesador de outbox (cada 10s) envía estos eventos al servidor central
-4. Puedes forzar el procesamiento con `POST /sync/trigger`
-
-### Error de autenticación
-
-Asegúrate de que las credenciales en `.env` o `settings.py` coincidan con el servidor central.
-
-### Base de datos corrupta
-
-Elimina `local.db` y reinicia el servidor (se recreará automáticamente).
+1. Verifica conectividad con el servidor central: `GET /health/central`
+2. Revisa logs del backend
+3. Verifica eventos pendientes: `GET /sync/stats`
+4. Fuerza sincronización: `POST /sync/trigger`
 
 ## Servidor Mock
 
@@ -423,9 +324,12 @@ Este servidor simula:
 - Endpoint `hl7inbound` para recepción de mensajes HL7
 - Almacenamiento de mensajes recibidos
 
-## Documentación Completa de Funcionalidades
+## Documentación
 
-Ver archivo [FUNCIONALIDADES.md](./FUNCIONALIDADES.md) para un listado exhaustivo de todas las funcionalidades del backend y frontend, incluyendo endpoints, páginas, componentes, hooks y servicios.
+- [FUNCIONALIDADES.md](./FUNCIONALIDADES.md) — Documentación completa de API y funcionalidades del backend
+- [QUICK_FIXES.md](./QUICK_FIXES.md) — Soluciones rápidas a problemas comunes
+- [CHANGELOG.md](./CHANGELOG.md) — Historial de cambios
+- [frontend_ReactNativ/DEVELOPMENT.md](./frontend_ReactNativ/DEVELOPMENT.md) — Desarrollo del frontend móvil
 
 ## Licencia
 

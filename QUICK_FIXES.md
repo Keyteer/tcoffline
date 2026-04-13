@@ -2,74 +2,37 @@
 
 Guía de soluciones rápidas para problemas comunes.
 
-## Problemas del Frontend Electron
+## Problemas del Backend (Docker)
 
-### Pantalla Negra o en Blanco
+### Contenedores no inician
 
-**Solución rápida:**
-
-1. Presiona **F12** para ver errores en DevTools
-2. Verifica que el backend esté corriendo: Abre `http://localhost:8000/health`
-3. Si el backend no responde, inícialo:
-   ```bash
-   cd C:\TrakCareOffline\Backend
-   venv\Scripts\activate
-   uvicorn app.main:app --host 0.0.0.0 --port 8000
-   ```
-
-**Si ves ventana negra sin errores:**
-- Problema de CSP bloqueando scripts desde file://
-- Asegúrate de usar la versión 1.9.0-rc07 o superior
-- Recompila con: `cd frontend && build-electron.bat`
-
-**Guía completa**: [frontend/ELECTRON_TROUBLESHOOTING.md](frontend/ELECTRON_TROUBLESHOOTING.md)
-
----
-
-### Error: node_modules corrupto
-
-**Síntoma:**
-```
-Error reading package.json: ...\node_modules\underscore\package.json
-⨯ node_modules.Dependency.Dependencies: ReadMapCB...
-```
-
-**Solución rápida:**
 ```bash
-cd frontend
-fix-dependencies.bat
+# Ver logs
+docker compose logs backend
+docker compose logs db
+
+# Recrear contenedores
+docker compose down
+docker compose up -d --build
 ```
 
-**Solución manual:**
+### Base de datos no se conecta
+
+**Verificar que PostgreSQL esté corriendo:**
 ```bash
-cd frontend
-rmdir /s /q node_modules
-del /f /q package-lock.json
-npm cache clean --force
-npm install --legacy-peer-deps
+docker compose ps
+# db debe estar "healthy"
+```
+
+**Si la base está corrupta, recrear volumen:**
+```bash
+docker compose down -v
+docker compose up -d
 ```
 
 ---
 
-### Build Electron falla
-
-**Solución:**
-```bash
-cd frontend
-
-# Limpiar todo
-rmdir /s /q dist
-rmdir /s /q dist-electron
-rmdir /s /q node_modules
-
-# Reinstalar y compilar
-npm install --legacy-peer-deps
-build-electron.bat
-```
-
----
-
-## Problemas del Backend
+## Problemas del Backend (Desarrollo Local)
 
 ### Python no encontrado (Windows)
 
@@ -90,7 +53,6 @@ Python no encontrado o no es válido
 4. Instala en: `C:\Python312` (no usar AppData)
 5. Reinicia la terminal
 6. Verifica: `python --version`
-7. Ejecuta nuevamente `setup-backend.bat`
 
 ---
 
@@ -150,107 +112,60 @@ kill -9 <PID>
 
 ---
 
-### Puerto 3000 o 5173 en uso (Frontend)
-
-**Solución:**
-```bash
-# Windows
-netstat -ano | findstr :3000
-taskkill /PID <número> /F
-
-# Linux/Mac
-lsof -i :3000
-kill -9 <PID>
-```
-
----
-
 ### Error de CORS en desarrollo
 
 **Verificación:**
 
 1. Backend debe estar en `http://localhost:8000`
-2. Frontend debe estar en `http://localhost:3000` (o 5173)
-3. Verifica `.env` en frontend:
-   ```
-   VITE_API_BASE_URL=http://localhost:8000
-   ```
-4. Reinicia ambos servidores
+2. Verifica que CORS esté configurado para la IP/puerto del frontend
+3. Reinicia el backend
 
 ---
 
-## Problemas de Producción
+## Frontend React Native
 
-### Servicio Backend no inicia
+### Expo Go no conecta al backend
 
-**Verificar logs:**
+1. Verifica que el backend esté en la misma red que el dispositivo
+2. Usa la IP de la máquina (no `localhost`) en la configuración del servidor
+3. Verifica que el firewall permita conexiones al puerto 8000
+
+### Limpieza de caché Expo
+
 ```bash
-# Ver estado del servicio
-sc query TrakCareOfflineBackend
-
-# Ver logs (ubicación configurada en NSSM)
-C:\TrakCareOffline\Backend\logs\
+cd frontend_ReactNativ
+npx expo start -c
 ```
 
-**Reiniciar servicio:**
+### Dependencias corruptas
+
 ```bash
-# Como Administrador
-net stop TrakCareOfflineBackend
-net start TrakCareOfflineBackend
+cd frontend_ReactNativ
+rm -rf node_modules
+npm install
 ```
-
----
-
-### Aplicación Electron instalada no abre
-
-**Verificación:**
-
-1. Verifica que el servicio backend esté corriendo:
-   ```bash
-   sc query TrakCareOfflineBackend
-   ```
-
-2. Si no está corriendo:
-   ```bash
-   net start TrakCareOfflineBackend
-   ```
-
-3. Abre la aplicación y presiona F12 para ver errores
-
----
-
-## Warnings que puedes ignorar
-
-### CSS Warning: "Expected identifier but found -"
-
-**Es seguro ignorarlo.** Es un issue conocido de esbuild con Tailwind CSS. No afecta funcionalidad.
-
-### npm audit warnings
-
-**Para desarrollo es OK.** Si quieres corregirlos:
-```bash
-npm audit fix --legacy-peer-deps
-```
-
-### "description is missed in package.json"
-
-**Es solo informativo.** No afecta el build de Electron.
 
 ---
 
 ## Comandos Útiles
 
-### Reiniciar todo (Desarrollo)
+### Reiniciar todo (Docker)
+
+```bash
+docker compose down
+docker compose up -d --build
+```
+
+### Reiniciar todo (Desarrollo local)
 
 ```bash
 # Backend
-cd <proyecto>
 venv\Scripts\activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Frontend (nueva terminal)
-cd frontend
-npm run dev
+cd frontend_ReactNativ
+npx expo start
 ```
 
 ### Verificar que todo funciona
@@ -263,17 +178,6 @@ curl http://localhost:8000/health
 http://localhost:8000/health
 ```
 
-### Ver versión actual
-
-```bash
-# Backend
-type package.json | findstr version
-
-# Frontend
-cd frontend
-type package.json | findstr version
-```
-
 ---
 
 ## Contacto
@@ -281,5 +185,4 @@ type package.json | findstr version
 Para problemas no cubiertos aquí:
 
 1. Revisa [CHANGELOG.md](CHANGELOG.md) para ver cambios recientes
-2. Revisa [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) para instalación completa
-3. Revisa [frontend/ELECTRON_TROUBLESHOOTING.md](frontend/ELECTRON_TROUBLESHOOTING.md) para problemas de Electron
+2. Revisa [frontend_ReactNativ/DEVELOPMENT.md](frontend_ReactNativ/DEVELOPMENT.md) para desarrollo del frontend móvil
