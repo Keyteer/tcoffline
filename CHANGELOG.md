@@ -1,5 +1,75 @@
 # Changelog
 
+---
+
+## [2.0-beta04] - 2026-04-13
+
+### Agregado
+#### Suite de Testing
+- `tests/conftest.py`, `test_auth.py`, `test_episodes.py`, `test_general.py`, `test_notes.py`, `test_sync.py`: Suite pytest para el backend FastAPI
+- `frontend_ReactNativ/src/lib/__tests__/`: Tests Jest para librerías del frontend React Native
+- `requests/auth.http`, `episodes.http`, `general.http`, `notes.http`, `sync.http`: Archivos de requests HTTP para pruebas manuales de la API
+
+---
+
+## [2.0-beta03] - 2026-04-08
+
+### Modificado
+#### UI y Cambios de Idioma (React Native)
+- Iconos de pantallas actualizados
+- `LoginScreen`: ajustes visuales y de texto
+- `Header`: cambios de presentación
+- `ServerDiscoveryScreen`: mejoras de UI
+
+---
+
+## [2.0-beta03] - 2026-04-08
+
+### Agregado
+#### Conectividad con Servidor (React Native)
+- `ServerDiscoveryScreen`: pantalla dedicada para descubrir el servidor por mDNS
+- `.env.example`: archivo de ejemplo de configuración de entorno
+- Mejoras en el servicio mDNS del backend para compatibilidad con React Native
+
+---
+
+## [2.0-beta03] - 2026-04-07
+
+### Agregado
+#### Implementación Inicial React Native
+- Proyecto Expo SDK 54 en `frontend_ReactNativ/`
+- Pantallas: `LoginScreen`, `EpisodesScreen`, `NewEpisodeScreen`, `ClinicalNoteScreen`, `ServerDiscoveryScreen`
+- Librerías: `api.ts`, `auth.ts`, `serverConfig.ts`, `rutValidation.ts`
+- Componentes y contextos base de la aplicación móvil
+
+---
+
+## [2.0-beta02] - 2026-04-01
+
+### Agregado
+#### Autenticación JWT y Conectividad Multi-Cliente
+- `app/mdns_service.py`: anuncio del servidor vía mDNS/Zeroconf para descubrimiento automático en LAN
+- Endpoint `/discovery`: expone información del servidor para clientes que lo descubren por mDNS
+- Migración de autenticación HTTP Basic → Bearer Token (JWT)
+- Soporte para múltiples clientes simultáneos con tokens independientes
+
+---
+
+## [2.0-beta01] - 2026-03-31
+
+### Agregado
+#### Containerización del Backend
+- `Dockerfile`: imagen multi-stage Python 3.12 slim
+- `docker-compose.yml`: orquestación de backend + PostgreSQL 15-alpine
+- `entrypoint.sh`: ejecuta migraciones Alembic antes de iniciar uvicorn
+
+#### Migración a PostgreSQL
+- 11 migraciones Alembic (`alembic/versions/001` a `011`): esquema completo incluyendo JSONB
+- Reemplazo de SQLite + aiosqlite por PostgreSQL 15 + psycopg2 con connection pooling
+- `migrate_sqlite_to_pg.py`: script one-time para migrar datos existentes
+
+---
+
 ## [1.9.0-rc07] - 2026-03-23
 
 ### Corregido
