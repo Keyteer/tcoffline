@@ -1,0 +1,35 @@
+### ===================================================
+### Sync endpoints
+### ===================================================
+
+@baseUrl = http://localhost:8000
+
+### Login first
+# @name loginRequest
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+### Get connection status
+GET {{baseUrl}}/sync/connection-status
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Get sync stats
+GET {{baseUrl}}/sync/stats
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Trigger manual sync (upstream - outbox)
+POST {{baseUrl}}/sync/trigger
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Retry failed events
+POST {{baseUrl}}/sync/retry-failed
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Sync from central (downstream - pull episodes)
+POST {{baseUrl}}/sync/from-central
+Authorization: Bearer {{loginRequest.response.body.access_token}}

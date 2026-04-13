@@ -28,5 +28,20 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  test:
+    build: .
+    volumes:
+      - ./tests:/app/tests
+      - ./app:/app/app
+    environment:
+      - DATABASE_URL=postgresql://tcoffline:tcoffline@db:5432/tcoffline_test
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["python", "-m", "pytest"]
+    command: ["tests/", "-v", "--tb=short"]
+    profiles:
+      - test
+
 volumes:
   pgdata:
