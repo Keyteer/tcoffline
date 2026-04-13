@@ -1,0 +1,86 @@
+### ===================================================
+### Episode endpoints
+### ===================================================
+
+@baseUrl = http://localhost:8000
+
+### Login first (needed for auth)
+# @name loginRequest
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+### ---------------------------------------------------
+### CRUD
+### ---------------------------------------------------
+
+### Create episode
+# @name createEpisode
+POST {{baseUrl}}/episodes
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "mrn": "MRN-TEST-001",
+  "num_episodio": "EP-TEST-001",
+  "run": "12345678-9",
+  "paciente": "García López Juan",
+  "sexo": "M",
+  "tipo": "Ambulatorio",
+  "hospital": "Hospital Central",
+  "ubicacion": "Urgencias",
+  "estado": "Activo",
+  "profesional": "Dr. Test",
+  "motivo_consulta": "Dolor abdominal",
+  "data_json": {
+    "MRN": "MRN-TEST-001",
+    "NumEpisodio": "EP-TEST-001",
+    "Paciente": "García López, Juan"
+  }
+}
+
+### List all episodes
+GET {{baseUrl}}/episodes
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### List episodes filtered by type
+GET {{baseUrl}}/episodes?type=Ambulatorio&skip=0&limit=10
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Get episode by ID
+GET {{baseUrl}}/episodes/{{createEpisode.response.body.id}}
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Update episode
+PUT {{baseUrl}}/episodes/{{createEpisode.response.body.id}}
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "estado": "Alta",
+  "ubicacion": "Piso 3"
+}
+
+### Delete episode
+DELETE {{baseUrl}}/episodes/{{createEpisode.response.body.id}}
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### ---------------------------------------------------
+### Unique values
+### ---------------------------------------------------
+
+### Get unique episode types
+GET {{baseUrl}}/episodes/types/unique
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Get unique locations
+GET {{baseUrl}}/episodes/locations/unique
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Get unique locations filtered by type
+GET {{baseUrl}}/episodes/locations/unique?tipo=Ambulatorio
+Authorization: Bearer {{loginRequest.response.body.access_token}}

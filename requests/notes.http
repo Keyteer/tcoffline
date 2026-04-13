@@ -1,0 +1,51 @@
+### ===================================================
+### Clinical Notes endpoints
+### ===================================================
+
+@baseUrl = http://localhost:8000
+
+### Login first
+# @name loginRequest
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+### Create an episode to attach notes to
+# @name createEpisode
+POST {{baseUrl}}/episodes
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "mrn": "MRN-NOTES-001",
+  "num_episodio": "EP-NOTES-001",
+  "paciente": "Test Patient",
+  "tipo": "Ambulatorio",
+  "data_json": {"MRN": "MRN-NOTES-001", "NumEpisodio": "EP-NOTES-001"}
+}
+
+### ---------------------------------------------------
+### Notes CRUD
+### ---------------------------------------------------
+
+### Create clinical note
+# @name createNote
+POST {{baseUrl}}/episodes/{{createEpisode.response.body.id}}/notes
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "note_text": "Paciente estable. Signos vitales normales. Se indica alta médica."
+}
+
+### List all notes for episode
+GET {{baseUrl}}/episodes/{{createEpisode.response.body.id}}/notes
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Get specific note
+GET {{baseUrl}}/episodes/{{createEpisode.response.body.id}}/notes/{{createNote.response.body.id}}
+Authorization: Bearer {{loginRequest.response.body.access_token}}

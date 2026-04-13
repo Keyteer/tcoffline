@@ -6,9 +6,16 @@
 
 ### Agregado
 #### Suite de Testing
-- `tests/conftest.py`, `test_auth.py`, `test_episodes.py`, `test_general.py`, `test_notes.py`, `test_sync.py`: Suite pytest para el backend FastAPI
-- `frontend_ReactNativ/src/lib/__tests__/`: Tests Jest para librerías del frontend React Native
-- `requests/auth.http`, `episodes.http`, `general.http`, `notes.http`, `sync.http`: Archivos de requests HTTP para pruebas manuales de la API
+- **Backend — 56 tests, todos pasando.** Corren dentro del contenedor Docker contra PostgreSQL real (`tcoffline_test`). El servicio `test` en `docker-compose.yml` anula el entrypoint para saltar migraciones y uvicorn, y monta `tests/` y `app/` como volúmenes para iteración rápida sin rebuild. Comando: `docker compose --profile test run --rm test`
+  - `tests/conftest.py`: Crea automáticamente la base de datos `tcoffline_test`, gestiona tablas y limpieza por test
+  - `tests/test_auth.py`: Login JWT, refresh token, `/auth/me`, gestión de usuarios por admin (16 tests)
+  - `tests/test_episodes.py`: CRUD completo, unicidad de `num_episodio`, tipos/ubicaciones únicos, creación de outbox events (13 tests)
+  - `tests/test_notes.py`: CRUD de notas clínicas con autor, casos 404 (8 tests)
+  - `tests/test_general.py`: `/health`, `/discovery`, `/sync/status`, settings de sistema, control de acceso admin (11 tests)
+  - `tests/test_sync.py`: Estado de conexión, estadísticas, trigger de sync, retry de eventos fallidos (8 tests)
+- **React Native — Jest + jest-expo.** Tests unitarios para librerías puras en `frontend_ReactNativ/src/lib/__tests__/`: validación RUT chileno, formateo de tiempo relativo, manejo de credenciales (SecureStore), configuración de servidor. Comando: `npm test` desde `frontend_ReactNativ/`
+- `pytest.ini`: Configuración mínima de pytest apuntando a `tests/`
+- `requests/auth.http`, `episodes.http`, `general.http`, `notes.http`, `sync.http`, `variables.http`: Colección de requests HTTP para pruebas manuales con la extensión REST Client de VS Code
 
 ---
 

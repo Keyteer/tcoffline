@@ -1,0 +1,53 @@
+### ===================================================
+### General & System endpoints
+### ===================================================
+
+@baseUrl = http://localhost:8000
+
+### Health check (no auth required)
+GET {{baseUrl}}/health
+
+### Health check with language
+GET {{baseUrl}}/health
+Accept-Language: en
+
+### Discovery (no auth required)
+GET {{baseUrl}}/discovery
+
+### Root
+GET {{baseUrl}}/
+
+### ---------------------------------------------------
+### Authenticated endpoints
+### ---------------------------------------------------
+
+### Login first
+# @name loginRequest
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+### Central health check
+GET {{baseUrl}}/health/central
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Get sync status
+GET {{baseUrl}}/sync/status
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Get system settings
+GET {{baseUrl}}/settings
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Update system settings (admin only)
+PUT {{baseUrl}}/settings
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+Content-Type: application/json
+
+{
+  "enable_read_only_mode": false
+}
