@@ -273,6 +273,17 @@ export const lang_en: TranslationKeys = {
     'Pendiente': 'Pending',
   },
 
+  offline: {
+    banner: 'No server connection — showing cached data',
+    pendingChange: 'pending change',
+    pendingChanges: 'pending changes',
+    syncing: 'syncing...',
+    cachedData: 'Cached data',
+    queuedNote: 'Note queued — will be sent on reconnect',
+    queuedEpisode: 'Episode queued — will be created on reconnect',
+    noCache: 'No cached data available. Connect to the server to load data.',
+  },
+
   serverDiscovery: {
     title: 'Connect to Server',
     subtitle: 'Enter the TrakCare server address',
@@ -284,5 +295,7 @@ export const lang_en: TranslationKeys = {
     testAndConnect: 'Test & Connect',
     connectionFailed: 'Could not connect to the server. Check the address and make sure the server is running.',
     changeServer: 'Change Server',
+    continueOffline: 'Continue without connection (offline mode)',
+    resumeLastConnection: 'Resume last connection (offline mode)',
   },
 };

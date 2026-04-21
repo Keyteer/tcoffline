@@ -2,6 +2,26 @@
 
 ---
 
+## [2.0-beta05] - 2026-04-14
+
+### Agregado
+#### Resiliencia Offline (Frontend React Native)
+- **Capa de caché offline** (`src/lib/offlineCache.ts`): Almacena episodios, detalles de episodio, notas clínicas, estadísticas de sincronización, tipos de episodio y ubicaciones en AsyncStorage. Los datos se guardan automáticamente en cada respuesta exitosa del servidor y se sirven desde caché cuando el backend no está disponible.
+- **Cola de mutaciones** (`src/lib/mutationQueue.ts`): Las creaciones de episodios y notas clínicas se encolan en AsyncStorage cuando el backend está inaccesible, y se replayan automáticamente al reconectar.
+- **Contexto de conectividad** (`src/contexts/ConnectivityContext.tsx`): Polling cada 10 segundos al endpoint `/health` del backend. Detecta transiciones offline→online y dispara el replay automático de la cola de mutaciones. Se reactiva al volver la app a primer plano.
+- **Componente OfflineBanner** (`src/components/OfflineBanner.tsx`): Indicador visual que aparece cuando el backend es inaccesible, mostrando estado de conexión y cantidad de cambios pendientes.
+- **Traducciones offline** en `lang_es.ts` y `lang_en.ts`: Mensajes para banner offline, cambios pendientes, notas/episodios encolados, datos en caché.
+
+### Modificado
+#### API y Navegación
+- **`src/lib/api.ts`**: Los métodos de lectura (`getEpisodes`, `getEpisode`, `getClinicalNotes`, `getSyncStats`, `getUniqueLocations`, `getUniqueEpisodeTypes`) ahora cachean respuestas exitosas y sirven datos desde caché ante errores de red.
+- **`App.tsx`**: Si el backend está caído pero el usuario estaba autenticado previamente, navega a la pantalla de episodios en modo offline en lugar de bloquear con la pantalla de descubrimiento de servidor. Se agrega `ConnectivityProvider` al árbol de componentes.
+- **`EpisodesScreen.tsx`**: Muestra `OfflineBanner` cuando el backend no está disponible.
+- **`ClinicalNoteScreen.tsx`**: Muestra `OfflineBanner`; la creación de notas se encola cuando está offline y se muestra mensaje de confirmación.
+- **`NewEpisodeScreen.tsx`**: Muestra `OfflineBanner`; la creación de episodios se encola cuando está offline y redirige a la lista de episodios.
+
+---
+
 ## [2.0-beta04] - 2026-04-13
 
 ### Agregado

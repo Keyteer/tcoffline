@@ -12,9 +12,10 @@ enableFreeze(false);
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { LanguageProvider, useLanguage } from './src/contexts/LanguageContext';
 import { UserProvider } from './src/contexts/UserContext';
+import { ConnectivityProvider } from './src/contexts/ConnectivityContext';
 import { auth } from './src/lib/auth';
 import { api, setOnUnauthorized } from './src/lib/api';
-import { getServerUrlSync, loadServerUrl } from './src/lib/serverConfig';
+import { loadServerUrl } from './src/lib/serverConfig';
 
 import { ServerDiscoveryScreen } from './src/screens/ServerDiscoveryScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
@@ -45,8 +46,12 @@ function AppNavigator() {
         await auth.init();
 
         // Check backend health
-        await api.getHealth();
-        setBackendAvailable(true);
+        try {
+          await api.getHealth();
+          setBackendAvailable(true);
+        } catch {
+          setBackendAvailable(false);
+        }
 
         // Check if user is already authenticated
         setIsAuthenticated(auth.isAuthenticated());
@@ -79,6 +84,7 @@ function AppNavigator() {
   }
 
   // Determine the initial route based on connectivity and auth state
+  // If backend is down, always show ServerDiscovery (which offers "Resume last connection" if credentials exist)
   const initialRoute = !backendAvailable
     ? 'ServerDiscovery'
     : isAuthenticated
@@ -86,18 +92,20 @@ function AppNavigator() {
       : 'Login';
 
   return (
-    <UserProvider>
-      <Stack.Navigator
-        initialRouteName={initialRoute}
-        screenOptions={{ headerShown: false, freezeOnBlur: false }}
-      >
-        <Stack.Screen name="ServerDiscovery" component={ServerDiscoveryScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Episodes" component={EpisodesScreen} />
-        <Stack.Screen name="NewEpisode" component={NewEpisodeScreen} />
-        <Stack.Screen name="ClinicalNote" component={ClinicalNoteScreen} />
-      </Stack.Navigator>
-    </UserProvider>
+    <ConnectivityProvider>
+      <UserProvider>
+        <Stack.Navigator
+          initialRouteName={initialRoute}
+          screenOptions={{ headerShown: false, freezeOnBlur: false }}
+        >
+          <Stack.Screen name="ServerDiscovery" component={ServerDiscoveryScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Episodes" component={EpisodesScreen} />
+          <Stack.Screen name="NewEpisode" component={NewEpisodeScreen} />
+          <Stack.Screen name="ClinicalNote" component={ClinicalNoteScreen} />
+        </Stack.Navigator>
+      </UserProvider>
+    </ConnectivityProvider>
   );
 }
 

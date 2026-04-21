@@ -15,6 +15,13 @@ import type {
   SystemSettings,
 } from '../types';
 import { getServerUrl } from './serverConfig';
+import { offlineCache } from './offlineCache';
+
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof TypeError && /network|fetch|abort/i.test(err.message)) return true;
+  if (err instanceof APIError) return false; // HTTP errors are not network errors
+  return err instanceof Error && !/unauthorized|forbidden/i.test(err.message);
+}
 
 export class APIError extends Error {
   constructor(public status: number, message: string, public data?: unknown) {
@@ -117,7 +124,17 @@ async function fetchWithAuth(
       errorData = { detail: response.statusText };
     }
 
-    const message = errorData.detail || `HTTP ${response.status}`;
+    let message: string;
+    const detail = errorData.detail;
+    if (typeof detail === 'string') {
+      message = detail;
+    } else if (Array.isArray(detail)) {
+      message = detail.map((d: any) => d.msg || JSON.stringify(d)).join('; ');
+    } else if (detail) {
+      message = JSON.stringify(detail);
+    } else {
+      message = `HTTP ${response.status}`;
+    }
     throw new APIError(response.status, message, errorData);
   }
 
@@ -168,13 +185,36 @@ export const api = {
     if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
 
     const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    const response = await fetchWithAuth(`/episodes${query}`);
-    return response.json();
+    try {
+      const response = await fetchWithAuth(`/episodes${query}`);
+      const data: Episode[] = await response.json();
+      // Cache the full unfiltered list
+      if (!params?.type && !params?.skip) {
+        offlineCache.setEpisodes(data);
+      }
+      return data;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        const cached = await offlineCache.getEpisodes();
+        if (cached) return cached;
+      }
+      throw err;
+    }
   },
 
   async getEpisode(id: number): Promise<EpisodeDetail> {
-    const response = await fetchWithAuth(`/episodes/${id}`);
-    return response.json();
+    try {
+      const response = await fetchWithAuth(`/episodes/${id}`);
+      const data: EpisodeDetail = await response.json();
+      offlineCache.setEpisodeDetail(id, data);
+      return data;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        const cached = await offlineCache.getEpisodeDetail(id);
+        if (cached) return cached;
+      }
+      throw err;
+    }
   },
 
   async createEpisode(episode: EpisodeCreateRequest): Promise<Episode> {
@@ -194,8 +234,18 @@ export const api = {
   },
 
   async getClinicalNotes(episodeId: number): Promise<ClinicalNote[]> {
-    const response = await fetchWithAuth(`/episodes/${episodeId}/notes`);
-    return response.json();
+    try {
+      const response = await fetchWithAuth(`/episodes/${episodeId}/notes`);
+      const data: ClinicalNote[] = await response.json();
+      offlineCache.setClinicalNotes(episodeId, data);
+      return data;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        const cached = await offlineCache.getClinicalNotes(episodeId);
+        if (cached) return cached;
+      }
+      throw err;
+    }
   },
 
   async getSyncStatus(): Promise<SyncStatus> {
@@ -204,8 +254,18 @@ export const api = {
   },
 
   async getSyncStats(): Promise<SyncStats> {
-    const response = await fetchWithAuth('/sync/stats');
-    return response.json();
+    try {
+      const response = await fetchWithAuth('/sync/stats');
+      const data: SyncStats = await response.json();
+      offlineCache.setSyncStats(data);
+      return data;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        const cached = await offlineCache.getSyncStats();
+        if (cached) return cached;
+      }
+      throw err;
+    }
   },
 
   async triggerSync(): Promise<{ message: string }> {
@@ -271,12 +331,32 @@ export const api = {
     if (tipo) queryParams.append('tipo', tipo);
 
     const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    const response = await fetchWithAuth(`/episodes/locations/unique${query}`);
-    return response.json();
+    try {
+      const response = await fetchWithAuth(`/episodes/locations/unique${query}`);
+      const data: string[] = await response.json();
+      if (tipo) offlineCache.setLocations(tipo, data);
+      return data;
+    } catch (err) {
+      if (isNetworkError(err) && tipo) {
+        const cached = await offlineCache.getLocations(tipo);
+        if (cached) return cached;
+      }
+      throw err;
+    }
   },
 
   async getUniqueEpisodeTypes(): Promise<string[]> {
-    const response = await fetchWithAuth('/episodes/types/unique');
-    return response.json();
+    try {
+      const response = await fetchWithAuth('/episodes/types/unique');
+      const data: string[] = await response.json();
+      offlineCache.setEpisodeTypes(data);
+      return data;
+    } catch (err) {
+      if (isNetworkError(err)) {
+        const cached = await offlineCache.getEpisodeTypes();
+        if (cached) return cached;
+      }
+      throw err;
+    }
   },
 };

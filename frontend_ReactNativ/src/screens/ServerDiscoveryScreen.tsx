@@ -16,6 +16,7 @@ import {
   testConnection,
   getServerUrlSync,
 } from '../lib/serverConfig';
+import { auth } from '../lib/auth';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/types';
@@ -35,6 +36,8 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
   const [error, setError] = useState('');
   const [isTesting, setIsTesting] = useState(false);
   const [autoTrying, setAutoTrying] = useState(true);
+  const [autoFailed, setAutoFailed] = useState(false);
+  const hasStoredCredentials = auth.isAuthenticated();
 
   // Pulse animation while auto-trying
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -68,6 +71,8 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
       setAutoTrying(false);
       if (ok) {
         navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      } else {
+        setAutoFailed(true);
       }
     })();
 
@@ -162,6 +167,16 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
       marginBottom: 24,
     },
     tryingText: { marginTop: 10, fontSize: 14, color: colors.textSecondary },
+    offlineButton: {
+      marginTop: 24,
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSecondary,
+    },
+    offlineButtonText: { color: colors.textSecondary, fontWeight: '600', fontSize: 14, textAlign: 'center' },
   });
 
   if (autoTrying) {
@@ -174,6 +189,34 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
         <Text style={styles.tryingText}>
           {d.tryingDefault} {getServerUrlSync()}
         </Text>
+      </View>
+    );
+  }
+
+  if (autoFailed) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
+        <View style={styles.iconCircle}>
+          <Text style={styles.icon}>📡</Text>
+        </View>
+        <Text style={[styles.title, { textAlign: 'center', marginTop: 12 }]}>{d.title}</Text>
+        <Text style={[styles.subtitle, { marginTop: 8, marginBottom: 28 }]}>
+          {d.connectionFailed}
+        </Text>
+        <TouchableOpacity
+          style={[styles.button, { width: '100%' }]}
+          onPress={() => setAutoFailed(false)}
+        >
+          <Text style={styles.buttonText}>{d.changeServer}</Text>
+        </TouchableOpacity>
+        {hasStoredCredentials && (
+          <TouchableOpacity
+            style={[styles.offlineButton, { width: '100%', marginTop: 12 }]}
+            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Episodes' }] })}
+          >
+            <Text style={styles.offlineButtonText}>{d.resumeLastConnection}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     );
   }
@@ -223,6 +266,15 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
               <Text style={styles.buttonText}>{d.testAndConnect}</Text>
             )}
           </TouchableOpacity>
+
+          {hasStoredCredentials && (
+            <TouchableOpacity
+              style={[styles.offlineButton, { marginTop: 12 }]}
+              onPress={() => navigation.reset({ index: 0, routes: [{ name: 'Episodes' }] })}
+            >
+              <Text style={styles.offlineButtonText}>{d.resumeLastConnection}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
     </View>

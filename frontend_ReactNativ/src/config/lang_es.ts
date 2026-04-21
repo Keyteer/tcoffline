@@ -270,6 +270,17 @@ export const lang_es = {
     'Pendiente': 'Pendiente',
   },
 
+  offline: {
+    banner: 'Sin conexión al servidor — mostrando datos en caché',
+    pendingChange: 'cambio pendiente',
+    pendingChanges: 'cambios pendientes',
+    syncing: 'sincronizándose...',
+    cachedData: 'Datos en caché',
+    queuedNote: 'Nota en cola — se enviará al reconectar',
+    queuedEpisode: 'Episodio en cola — se creará al reconectar',
+    noCache: 'No hay datos en caché disponibles. Conéctese al servidor para cargar datos.',
+  },
+
   serverDiscovery: {
     title: 'Conectar al Servidor',
     subtitle: 'Ingrese la dirección del servidor TrakCare',
@@ -281,6 +292,8 @@ export const lang_es = {
     testAndConnect: 'Probar y Conectar',
     connectionFailed: 'No se pudo conectar al servidor. Verifique la dirección y que el servidor esté corriendo.',
     changeServer: 'Cambiar Servidor',
+    continueOffline: 'Continuar sin conexión (modo offline)',
+    resumeLastConnection: 'Retomar última conexión (modo offline)',
   },
 };
 

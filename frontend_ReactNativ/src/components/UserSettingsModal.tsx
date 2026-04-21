@@ -55,8 +55,8 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
       setConfirmPassword('');
       api.getSystemSettings().then(settings => {
         setEnableReadOnlyMode(settings.enable_read_only_mode);
-      }).catch(err => {
-        console.error('Error loading system settings:', err);
+      }).catch(() => {
+        // ignore — not available offline
       });
       if (user.is_admin) {
         loadUsers();
@@ -68,8 +68,8 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
     try {
       const usersList = await api.listUsers();
       setUsers(usersList);
-    } catch (err) {
-      console.error('Error loading users:', err);
+    } catch {
+      // ignore — not available offline
     }
   };
 
