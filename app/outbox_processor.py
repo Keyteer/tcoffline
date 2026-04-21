@@ -272,6 +272,39 @@ class OutboxProcessor:
                     logger.info(f"Episode {num_episodio} - Already synced from central, no message needed")
                     return None
 
+            elif event.event_type == "episode_updated":
+                num_episodio = event.correlation_id
+                episode = db.query(models.Episode).filter(models.Episode.num_episodio == num_episodio).first()
+
+                if not episode:
+                    logger.error(f"Episode not found: {num_episodio}")
+                    return None
+
+                if episode.mrn.startswith("OFFP") or episode.num_episodio.startswith("OFFE"):
+                    logger.warning(f"Skipping A08 for episode {episode.num_episodio} - not yet synced with central")
+                    return None
+
+                full_name = episode.paciente if episode.paciente else "Unknown Patient"
+                patient_class = "E" if episode.tipo == "Urgencia" else "I" if episode.tipo == "Hospitalizacion" else "O"
+
+                message, _ = self.hl7_builder.build_a08_message(
+                    patient_id=episode.mrn,
+                    rut=episode.run,
+                    last_name=full_name,
+                    first_name="",
+                    birth_date=episode.fecha_nacimiento,
+                    sex=episode.sexo,
+                    episode_id=episode.num_episodio,
+                    patient_class=patient_class,
+                    location=episode.habitacion,
+                    admission_type=episode.tipo,
+                    admission_datetime=episode.fecha_atencion,
+                    motivo_consulta=episode.motivo_consulta,
+                    clinical_unit=episode.ubicacion,
+                    control_id=event.id
+                )
+                return message
+
             else:
                 logger.warning(f"Unknown event type: {event.event_type}")
                 return None
@@ -438,6 +471,76 @@ class OutboxProcessor:
 
         return True
 
+    async def process_episode_updated_event(self, event: models.OutboxEvent, db: Session) -> bool:
+        """
+        Process episode_updated event by sending an ADT^A08 message.
+
+        Skips episodes not yet synced with central (OFFP/OFFE prefixes).
+
+        Returns:
+            True if successfully processed, False otherwise
+        """
+        num_episodio = event.correlation_id
+        episode = db.query(models.Episode).filter(models.Episode.num_episodio == num_episodio).first()
+
+        if not episode:
+            logger.error(f"Episode not found for episode_updated event: {num_episodio}")
+            event.status = "failed"
+            event.last_error = "Episode not found"
+            event.retry_count += 1
+            db.commit()
+            return False
+
+        if episode.mrn.startswith("OFFP") or episode.num_episodio.startswith("OFFE"):
+            logger.info(f"Episode {num_episodio} not yet synced with central, skipping A08")
+            event.status = "sent"
+            event.last_error = None
+            db.commit()
+            return True
+
+        full_name = episode.paciente if episode.paciente else "Unknown Patient"
+        patient_class = "E" if episode.tipo == "Urgencia" else "I" if episode.tipo == "Hospitalizacion" else "O"
+
+        a08_message, _ = self.hl7_builder.build_a08_message(
+            patient_id=episode.mrn,
+            rut=episode.run,
+            last_name=full_name,
+            first_name="",
+            birth_date=episode.fecha_nacimiento,
+            sex=episode.sexo,
+            episode_id=episode.num_episodio,
+            patient_class=patient_class,
+            location=episode.habitacion,
+            admission_type=episode.tipo,
+            admission_datetime=episode.fecha_atencion,
+            motivo_consulta=episode.motivo_consulta,
+            clinical_unit=episode.ubicacion,
+            control_id=f"{event.id}_A08"
+        )
+
+        event.hl7_payload = a08_message
+        db.commit()
+
+        success, ack_code, response_data = await self.send_hl7_message(a08_message, "ADT^A08")
+
+        if success:
+            event.status = "sent"
+            event.last_error = None
+            logger.info(f"Episode updated event {event.id} sent as A08 for episode {num_episodio}")
+        else:
+            event.retry_count += 1
+            event.last_error = str(response_data) if response_data else "Unknown error"
+
+            if event.retry_count >= self.max_retries:
+                event.status = "failed"
+                logger.error(f"Event {event.id} failed after {event.retry_count} retries")
+            else:
+                event.status = "pending"
+                logger.warning(f"Event {event.id} - A08 failed, will retry (attempt {event.retry_count}/{self.max_retries})")
+
+        db.commit()
+        return success
+
     async def process_event(self, event: models.OutboxEvent, db: Session) -> bool:
         """
         Process a single outbox event.
@@ -449,6 +552,9 @@ class OutboxProcessor:
 
         if event.event_type == "episode_created":
             return await self.process_episode_created_event(event, db)
+
+        if event.event_type == "episode_updated":
+            return await self.process_episode_updated_event(event, db)
 
         hl7_message = self.generate_hl7_from_event(event, db)
 

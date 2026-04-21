@@ -2,6 +2,24 @@
 
 ---
 
+## [2.0-beta06] - 2026-04-21
+
+### Agregado
+#### Tests de integración HL7 (backend)
+- **`tests/test_integration_hl7_flow.py`**: 14 tests de integración async para el flujo completo del `OutboxProcessor` → HL7 → TrakCare central. Cubre: flujo A28→A01 exitoso para paciente nuevo (OFFP/OFFE), fallos HTTP de A28/A01 con incremento de `retry_count`, agotamiento de reintentos (`status=failed`), A08 enviado/omitido según estado de sincronización del episodio, clase de paciente `E` para Urgencia, flujo ORU^R01 con `note.synced_flag=True`, ORU omitido para episodio no sincronizado.
+- **`pytest.ini`**: Agregado `asyncio_mode = auto` para soporte de tests async sin decorador por test.
+- **`docker-compose.yml`**: Montaje de `pytest.ini` en el servicio `test` para heredar configuración desde el host.
+
+#### HTTP files para servidor TrakCare
+- **`requests/TC/hl7_inbound.http`**: Requests directos al endpoint `/demo01/tcoffline/hl7inbound` con encadenamiento de respuestas (A28→A01→A08→A03→ORU) usando `{{a28.response.body.pid}}` y `{{a01.response.body.enctid}}`, más variantes standalone para cada tipo de mensaje.
+- **`requests/TC/data_sync.http`**: Requests al endpoint `/demo01/tcoffline/getData` con filtros (sin filtro, por usuario, por departamento) y flujo completo de sincronización vía backend local (login → stats → trigger sync → verificar episodios).
+
+### Métricas de tests
+- **Backend**: 70 tests en total (56 existentes + 14 nuevos de integración HL7), todos pasando en Docker contra PostgreSQL `tcoffline_test`.
+- **React Native**: 116 tests de validación RUT, todos pasando.
+
+---
+
 ## [2.0-beta05] - 2026-04-14
 
 ### Agregado

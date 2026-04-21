@@ -1,0 +1,69 @@
+### ================================================================
+### TrakCare Data Sync — Pull episodes from central
+### Server: http://demo01.tcdb.vtas.cl.intersystems.com
+### Endpoint: GET /demo01/tcoffline/getData
+### Auth: HTTP Basic (demo / demodemo)
+###
+### The local backend calls this endpoint during downstream sync.
+### Use these requests to inspect what the central server returns
+### directly, without going through the local backend.
+### ================================================================
+
+@tcBaseUrl = http://demo01.tcdb.vtas.cl.intersystems.com
+@tcDataEndpoint = /demo01/tcoffline/getData
+
+# Basic ZGVtbzpkZW1vZGVtbw== = base64("demo:demodemo")
+@tcAuth = Basic ZGVtbzpkZW1vZGVtbw==
+
+### Pull all episodes (no filter)
+GET {{tcBaseUrl}}{{tcDataEndpoint}}
+Authorization: {{tcAuth}}
+
+### Pull episodes for a specific user filter
+GET {{tcBaseUrl}}{{tcDataEndpoint}}?user=doctest
+Authorization: {{tcAuth}}
+
+### Pull episodes with department filter
+GET {{tcBaseUrl}}{{tcDataEndpoint}}?user=doctest&dept=EMERGENCIA
+Authorization: {{tcAuth}}
+
+### Pull with the default demo filter from .env.example
+GET {{tcBaseUrl}}{{tcDataEndpoint}}?user=demo
+Authorization: {{tcAuth}}
+
+### ================================================================
+### Validate sync round-trip via local backend
+### Login → pull from central → verify local episodes updated
+### ================================================================
+
+@localUrl = http://localhost:8000
+
+### Step 1 — Login to local backend
+# @name localLogin
+POST {{localUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+### Step 2 — Check current sync stats before pull
+GET {{localUrl}}/sync/stats
+Authorization: Bearer {{localLogin.response.body.access_token}}
+
+### Step 3 — Trigger downstream sync (pull from central)
+POST {{localUrl}}/sync/from-central
+Authorization: Bearer {{localLogin.response.body.access_token}}
+
+### Step 4 — Check sync stats after pull (last_sync should be updated)
+GET {{localUrl}}/sync/stats
+Authorization: Bearer {{localLogin.response.body.access_token}}
+
+### Step 5 — List episodes to confirm data arrived
+GET {{localUrl}}/episodes?limit=10
+Authorization: Bearer {{localLogin.response.body.access_token}}
+
+### Step 6 — Check central connectivity status
+GET {{localUrl}}/health/central
+Authorization: Bearer {{localLogin.response.body.access_token}}
