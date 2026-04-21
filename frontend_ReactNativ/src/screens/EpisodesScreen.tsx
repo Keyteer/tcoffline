@@ -13,6 +13,7 @@ import { useUser } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Header } from '../components/Header';
 import { EpisodeRow } from '../components/EpisodeRow';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { api } from '../lib/api';
 import { formatTimeAgo } from '../lib/timeAgo';
 import type { Episode, EpisodeType, SyncStats } from '../types';
@@ -256,6 +257,8 @@ export function EpisodesScreen({ navigation }: Props) {
             <Text style={styles.readOnlyText}>{t.readOnlyMode.episodesBanner}</Text>
           </View>
         )}
+
+        <OfflineBanner />
 
         {syncStats && (
           <View style={styles.syncBar}>

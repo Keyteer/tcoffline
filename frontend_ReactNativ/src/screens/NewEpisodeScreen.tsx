@@ -15,8 +15,12 @@ import {
 } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { api } from '../lib/api';
+import { offlineCache } from '../lib/offlineCache';
+import { mutationQueue } from '../lib/mutationQueue';
 import { formatRUT, getRUTError } from '../lib/rutValidation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -28,6 +32,7 @@ type Props = {
 export function NewEpisodeScreen({ navigation }: Props) {
   const { t } = useLanguage();
   const { colors } = useTheme();
+  const { isBackendReachable } = useConnectivity();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -52,6 +57,13 @@ export function NewEpisodeScreen({ navigation }: Props) {
 
   useEffect(() => {
     const loadEpisodeTypes = async () => {
+      // Show cached data immediately (stale-while-revalidate)
+      const cached = await offlineCache.getEpisodeTypes();
+      if (cached && cached.length > 0) {
+        setAvailableEpisodeTypes(cached);
+        if (!episodeType) setEpisodeType(cached[0]);
+      }
+      // Refresh from network in background
       try {
         const types = await api.getUniqueEpisodeTypes();
         setAvailableEpisodeTypes(types);
@@ -59,7 +71,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
           setEpisodeType(types[0]);
         }
       } catch {
-        // ignore
+        // ignore — cached data already shown
       }
     };
     loadEpisodeTypes();
@@ -68,12 +80,19 @@ export function NewEpisodeScreen({ navigation }: Props) {
   useEffect(() => {
     if (!episodeType) return;
     const loadLocations = async () => {
-      setIsLoadingLocations(true);
+      // Show cached data immediately (stale-while-revalidate)
+      const cached = await offlineCache.getLocations(episodeType);
+      if (cached && cached.length > 0) {
+        setAvailableLocations(cached);
+      } else {
+        setIsLoadingLocations(true);
+      }
+      // Refresh from network in background
       try {
         const locations = await api.getUniqueLocations(episodeType);
         setAvailableLocations(Array.isArray(locations) ? locations : []);
       } catch {
-        setAvailableLocations([]);
+        if (!cached || cached.length === 0) setAvailableLocations([]);
       } finally {
         setIsLoadingLocations(false);
       }
@@ -133,7 +152,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
         Antecedentes: { Encuentros: [], Resultados: [] },
       };
 
-      const episode = await api.createEpisode({
+      const createRequest = {
         mrn: temporalMrn,
         num_episodio: temporalEpisodeNum,
         run: rut,
@@ -149,11 +168,21 @@ export function NewEpisodeScreen({ navigation }: Props) {
         estado: 'Activo',
         motivo_consulta: motivoConsulta,
         data_json: JSON.stringify(episodeData),
-      });
+      };
 
-      navigation.replace('ClinicalNote', { id: episode.id });
+      if (!isBackendReachable) {
+        await mutationQueue.enqueue({
+          type: 'createEpisode',
+          payload: createRequest,
+        });
+        navigation.replace('Episodes');
+      } else {
+        const episode = await api.createEpisode(createRequest);
+        navigation.replace('ClinicalNote', { id: episode.id });
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : t.newEpisode.createError);
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || t.newEpisode.createError);
     } finally {
       setIsLoading(false);
     }
@@ -325,6 +354,8 @@ export function NewEpisodeScreen({ navigation }: Props) {
           </TouchableOpacity>
 
           <Text style={styles.title}>{t.newEpisode.titlePatient}</Text>
+
+          <OfflineBanner />
 
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>{t.newEpisode.patientData}</Text>

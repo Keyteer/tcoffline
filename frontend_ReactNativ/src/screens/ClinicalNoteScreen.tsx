@@ -13,9 +13,12 @@ import {
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
 import { PatientHistoryModal } from '../components/PatientHistoryModal';
+import { OfflineBanner } from '../components/OfflineBanner';
 import { api } from '../lib/api';
+import { mutationQueue } from '../lib/mutationQueue';
 import type { EpisodeDetail, ClinicalNote } from '../types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -31,6 +34,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   const { isReadOnlyMode } = useUser();
   const { t, language } = useLanguage();
   const { colors } = useTheme();
+  const { isBackendReachable } = useConnectivity();
   const [episode, setEpisode] = useState<EpisodeDetail | null>(null);
   const [notes, setNotes] = useState<ClinicalNote[]>([]);
   const [noteText, setNoteText] = useState('');
@@ -94,10 +98,20 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     setError('');
 
     try {
-      await api.createClinicalNote(id, { note_text: noteText });
-      setSuccessMessage(t.clinicalNote.saveSuccess);
-      setNoteText('');
-      await loadNotes();
+      if (!isBackendReachable) {
+        await mutationQueue.enqueue({
+          type: 'createNote',
+          payload: { note_text: noteText },
+          episodeId: id,
+        });
+        setSuccessMessage(t.offline.queuedNote);
+        setNoteText('');
+      } else {
+        await api.createClinicalNote(id, { note_text: noteText });
+        setSuccessMessage(t.clinicalNote.saveSuccess);
+        setNoteText('');
+        await loadNotes();
+      }
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : t.clinicalNote.saveError);
@@ -315,6 +329,8 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
               <Text style={styles.historyButtonText}>{t.patientHistory.title}</Text>
             </TouchableOpacity>
           </View>
+
+          <OfflineBanner />
 
           {/* Patient Info Card */}
           <View style={styles.patientCard}>

@@ -47,7 +47,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
       await checkReadOnlyMode();
     } catch {
-      setUser(null);
+      // Backend unreachable — build a minimal User from cached auth data so the
+      // UI remains accessible in offline mode
+      if (storedUser) {
+        setUser({
+          id: 0,
+          username: storedUser.username,
+          role: storedUser.role,
+          active: true,
+          is_admin: false,
+          updated_at: '',
+        });
+      } else {
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
