@@ -1,0 +1,133 @@
+### ================================================================
+### TrakCare HL7 Inbound — Direct endpoint testing
+### Server: http://demo01.tcdb.vtas.cl.intersystems.com
+### Endpoint: POST /demo01/tcoffline/hl7inbound
+### Auth: HTTP Basic (demo / demodemo)
+###
+### EXECUTION ORDER: A28 → A01 → A08 | A03 | ORU
+###   A28 response → { "pid": "..." }    ← captured as {{a28.response...}}
+###   A01 response → { "enctid": "..." } ← captured as {{a01.response...}}
+###
+### The chained requests automatically inject pid/enctid from previous
+### responses. Run them top-to-bottom for the full happy path.
+### ================================================================
+
+@tcBaseUrl = http://demo01.tcdb.vtas.cl.intersystems.com
+@tcHl7Endpoint = /demo01/tcoffline/hl7inbound
+
+# Basic ZGVtbzpkZW1vZGVtbw== = base64("demo:demodemo")
+@tcAuth = Basic ZGVtbzpkZW1vZGVtbw==
+
+### ----------------------------------------------------------------
+### 1. ADT^A28 — Add Person (new patient registration)
+###    Expected response: { "pid": "<central-patient-id>" }
+###    Sends a local OFFP- prefixed MRN; central assigns a real PID.
+### ----------------------------------------------------------------
+# @name a28
+POST {{tcBaseUrl}}{{tcHl7Endpoint}}
+Authorization: {{tcAuth}}
+Content-Type: application/json
+
+{
+  "msg": "MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|20260421120000||ADT^A28|TCTEST001A28|P|2.5.1\rEVN|A28|20260421120000\rPID|||OFFP-TC001||Rodriguez^Carmen||19751201000000|F\rPV1|||||||||||||||||||||||||||||||||||||||||||||||||20260421120000\r",
+  "msg_type": "ADT^A28",
+  "fecha_envio": "2026-04-21T12:00:00"
+}
+
+### ----------------------------------------------------------------
+### 2. ADT^A01 — Admit / Visit Notification
+###    Expected response: { "enctid": "<central-episode-id>" }
+###    Uses pid from the A28 response above (auto-chained).
+###    Sends a local OFFE- prefixed episode ID; central assigns enctid.
+### ----------------------------------------------------------------
+# @name a01
+POST {{tcBaseUrl}}{{tcHl7Endpoint}}
+Authorization: {{tcAuth}}
+Content-Type: application/json
+
+{
+  "msg": "MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|20260421120100||ADT^A01|TCTEST001A01|P|2.5.1\rEVN|A01|20260421120100\rPID|||{{a28.response.body.pid}}||Rodriguez^Carmen||19751201000000|F\rPV1||O|UCI^101^A||||||||||||||||OFFE-TC001||||||||||||||||||||||||||20260421120100\rPV2|||Consulta medicina general\r",
+  "msg_type": "ADT^A01",
+  "fecha_envio": "2026-04-21T12:01:00"
+}
+
+### ----------------------------------------------------------------
+### 3. ADT^A08 — Update Patient Information
+###    No specific response expected (200 + optional ack_code).
+###    Uses real IDs from A28/A01 responses.
+### ----------------------------------------------------------------
+POST {{tcBaseUrl}}{{tcHl7Endpoint}}
+Authorization: {{tcAuth}}
+Content-Type: application/json
+
+{
+  "msg": "MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|20260421130000||ADT^A08|TCTEST001A08|P|2.5.1\rEVN|A08|20260421130000\rPID|||{{a28.response.body.pid}}||Rodriguez^Carmen||19751201000000|F\rPV1||O|UCI^201^B||||||||||||||||{{a01.response.body.enctid}}||||||||||||||||||||||||||20260421120100\rPV2|||Consulta de seguimiento - actualizacion de datos\r",
+  "msg_type": "ADT^A08",
+  "fecha_envio": "2026-04-21T13:00:00"
+}
+
+### ----------------------------------------------------------------
+### 4. ADT^A03 — Discharge Patient
+###    Uses real IDs from A28/A01 responses.
+### ----------------------------------------------------------------
+POST {{tcBaseUrl}}{{tcHl7Endpoint}}
+Authorization: {{tcAuth}}
+Content-Type: application/json
+
+{
+  "msg": "MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|20260421160000||ADT^A03|TCTEST001A03|P|2.5.1\rEVN|A03|20260421160000\rPID|||{{a28.response.body.pid}}||Rodriguez^Carmen||19751201000000|F\rPV1||O||||||||||||||||{{a01.response.body.enctid}}||||||||||||||||||||||||20260421160000\r",
+  "msg_type": "ADT^A03",
+  "fecha_envio": "2026-04-21T16:00:00"
+}
+
+### ----------------------------------------------------------------
+### 5. ORU^R01 — Clinical Note / Observation
+###    Expected response: { "estado": "ok", "pid": "...", "enctid": "..." }
+###    Uses real IDs from A28/A01 responses.
+### ----------------------------------------------------------------
+POST {{tcBaseUrl}}{{tcHl7Endpoint}}
+Authorization: {{tcAuth}}
+Content-Type: application/json
+
+{
+  "msg": "MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|20260421140000||ORU^R01|TCTEST001ORU|P|2.5.1\rPID|||{{a28.response.body.pid}}||Rodriguez^Carmen||19751201000000|F\rPV1||O|UCI^101||||||||||||||||{{a01.response.body.enctid}}||||||||||||||||||||||||||20260421140000\rPV2|||Consulta medicina general\rOBR|1||CLINICALNOTE^Clinical Note^LOCAL|||20260421140000|20260421140000|||||||||||||||||||||||||user=doctest\rOBX|1|TX|CLINICALNOTE^Clinical Note^LOCAL||  Paciente refiere dolor abdominal difuso de 3 dias de evolucion. Afebril, hemodinamicamente estable. Se indica ecografia abdominal y hemograma completo.||||||F|||20260421140000\r",
+  "msg_type": "ORU^R01",
+  "fecha_envio": "2026-04-21T14:00:00"
+}
+
+### ================================================================
+### STANDALONE VARIANTS — not chained, use fixed test IDs
+### ================================================================
+
+### A28 with RUT (Chilean national ID in PID.4)
+POST {{tcBaseUrl}}{{tcHl7Endpoint}}
+Authorization: {{tcAuth}}
+Content-Type: application/json
+
+{
+  "msg": "MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|20260421120000||ADT^A28|TCTEST002A28|P|2.5.1\rEVN|A28|20260421120000\rPID|||OFFP-TC002|20602702-9|Gonzalez^Pedro||19900303000000|M\rPV1|||||||||||||||||||||||||||||||||||||||||||||||||20260421120000\r",
+  "msg_type": "ADT^A28",
+  "fecha_envio": "2026-04-21T12:00:00"
+}
+
+### A01 — Emergency patient (patient class E), standalone with fixed IDs
+POST {{tcBaseUrl}}{{tcHl7Endpoint}}
+Authorization: {{tcAuth}}
+Content-Type: application/json
+
+{
+  "msg": "MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|20260421090000||ADT^A01|TCTEST003A01|P|2.5.1\rEVN|A01|20260421090000\rPID|||TC-MRN-FIXED||Morales^Ana||19650715000000|F\rPV1||E|URGENCIAS^Box3^2||||||||||||||||TC-ENC-FIXED||||||||||||||||||||||||||20260421090000\rPV2|||Dolor toracico agudo de inicio subito\r",
+  "msg_type": "ADT^A01",
+  "fecha_envio": "2026-04-21T09:00:00"
+}
+
+### ORU — Standalone clinical note with fixed IDs
+POST {{tcBaseUrl}}{{tcHl7Endpoint}}
+Authorization: {{tcAuth}}
+Content-Type: application/json
+
+{
+  "msg": "MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|20260421143000||ORU^R01|TCTEST003ORU|P|2.5.1\rPID|||TC-MRN-FIXED||Morales^Ana||19650715000000|F\rPV1||E|URGENCIAS^Box3||||||||||||||||TC-ENC-FIXED||||||||||||||||||||||||||20260421143000\rPV2|||Dolor toracico agudo\rOBR|1||CLINICALNOTE^Clinical Note^LOCAL|||20260421143000|20260421143000|||||||||||||||||||||||||user=doctest\rOBX|1|TX|CLINICALNOTE^Clinical Note^LOCAL||  Paciente ingresa por dolor toracico. ECG sin alteraciones agudas. Troponinas en espera. Se mantiene en observacion con monitor cardiaco.||||||F|||20260421143000\r",
+  "msg_type": "ORU^R01",
+  "fecha_envio": "2026-04-21T14:30:00"
+}

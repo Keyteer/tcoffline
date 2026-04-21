@@ -334,6 +334,42 @@ class HL7MessageBuilder:
         message = f"{msh}\r{evn}\r{pid}\r{pv1}\r"
         return message, control_id
 
+    def build_a08_message(
+        self,
+        patient_id: str,
+        rut: Optional[str],
+        last_name: str,
+        first_name: str,
+        birth_date: datetime,
+        sex: str,
+        episode_id: str,
+        patient_class: str,
+        location: Optional[str],
+        admission_type: Optional[str],
+        admission_datetime: datetime,
+        motivo_consulta: Optional[str] = None,
+        clinical_unit: Optional[str] = None,
+        control_id: Optional[str] = None
+    ) -> tuple[str, str]:
+        """
+        Build ADT^A08 (Update Patient Information) message.
+        Used when an existing episode's data is modified.
+
+        Returns:
+            Tuple of (message, control_id)
+        """
+        if not control_id:
+            control_id = self._generate_control_id()
+
+        msh = self.build_msh_segment("ADT", "A08", control_id)
+        evn = self.build_evn_segment("A08", admission_datetime)
+        pid = self.build_pid_segment(patient_id, rut, last_name, first_name, birth_date, sex)
+        pv1 = self.build_pv1_segment(episode_id, patient_class, location, admission_type, admission_datetime, clinical_unit)
+        pv2 = self.build_pv2_segment(motivo_consulta)
+
+        message = f"{msh}\r{evn}\r{pid}\r{pv1}\r{pv2}\r"
+        return message, control_id
+
     def build_a01_message(
         self,
         patient_id: str,
