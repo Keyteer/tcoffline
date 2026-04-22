@@ -11,7 +11,6 @@ from app.settings import settings
 import logging
 import json
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

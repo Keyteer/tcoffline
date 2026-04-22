@@ -9,7 +9,6 @@ from app import models
 import logging
 import json
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -30,11 +29,15 @@ class CentralHealthChecker:
             api_url = f"{self.central_url}{settings.CENTRAL_API_ENDPOINT}"
             auth = (settings.CENTRAL_API_USERNAME, settings.CENTRAL_API_PASSWORD)
 
+            logger.debug(f"Health check → GET {api_url}")
             async with httpx.AsyncClient(timeout=5.0) as client:
                 response = await client.get(api_url, auth=auth)
+                logger.debug(f"Health check ← {response.status_code} ({self.central_url})")
                 if response.status_code == 200:
                     self.consecutive_failures = 0
                     self.consecutive_successes += 1
+                    if self.consecutive_successes >= 2 and not self.is_connected:
+                        logger.info(f"Central server connected: {self.central_url}")
                     if self.consecutive_successes >= 2:
                         self.is_connected = True
                     self.last_check = datetime.utcnow()
@@ -44,6 +47,8 @@ class CentralHealthChecker:
 
         self.consecutive_successes = 0
         self.consecutive_failures += 1
+        if self.consecutive_failures >= 2 and self.is_connected:
+            logger.warning(f"Central server disconnected after {self.consecutive_failures} failures")
         if self.consecutive_failures >= 2:
             self.is_connected = False
         self.last_check = datetime.utcnow()
@@ -51,7 +56,7 @@ class CentralHealthChecker:
 
     async def start_monitoring(self):
         """Start continuous monitoring loop."""
-        logger.info(f"Starting health monitoring every {self.check_interval}s")
+        logger.info(f"Starting health monitoring (interval: {self.check_interval}s, target: {self.central_url})")
         while True:
             await self.check_health()
             await asyncio.sleep(self.check_interval)

@@ -20,14 +20,23 @@ services:
     build: .
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql://tcoffline:tcoffline@db:5432/tcoffline
-      - ENVIRONMENT=production
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - path: .env
+        required: true
+    environment:
+      - DATABASE_URL=postgresql://tcoffline:tcoffline@db:5432/tcoffline
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
+  # --- Tests ---
+  # docker compose --profile test run --rm test
   test:
     build: .
     volumes:
@@ -36,13 +45,13 @@ services:
       - ./pytest.ini:/app/pytest.ini
     environment:
       - DATABASE_URL=postgresql://tcoffline:tcoffline@db:5432/tcoffline_test
+      - LOG_LEVEL=WARNING
     depends_on:
       db:
         condition: service_healthy
     entrypoint: ["python", "-m", "pytest"]
     command: ["tests/", "-v", "--tb=short", "-o", "asyncio_mode=auto"]
-    profiles:
-      - test
+    profiles: [test]
 
 volumes:
   pgdata:
