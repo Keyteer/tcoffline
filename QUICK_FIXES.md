@@ -32,62 +32,6 @@ docker compose up -d
 
 ---
 
-## Problemas del Backend (Desarrollo Local)
-
-### Python no encontrado (Windows)
-
-**Síntoma:**
-```
-Python no encontrado o no es válido
-```
-
-**Causa**: Python de Microsoft Store no funciona correctamente.
-
-**Solución:**
-
-1. Desinstala Python de Microsoft Store (si lo tienes)
-2. Descarga Python oficial desde https://www.python.org/downloads/
-3. Durante instalación, marca:
-   - ☑ Add Python to PATH
-   - ☑ Install for all users
-4. Instala en: `C:\Python312` (no usar AppData)
-5. Reinicia la terminal
-6. Verifica: `python --version`
-
----
-
-### Error al instalar dependencias Python
-
-**Solución:**
-```bash
-# Eliminar entorno virtual corrupto
-rmdir /s /q venv
-
-# Recrear
-python -m venv venv
-venv\Scripts\activate
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
----
-
-### Base de datos no existe
-
-**Solución:**
-```bash
-# Activar entorno virtual
-venv\Scripts\activate
-
-# Aplicar migraciones
-alembic upgrade head
-
-# Crear usuarios demo
-python init_demo_users.py
-```
-
----
-
 ## Problemas de Desarrollo
 
 ### Puerto 8000 en uso
@@ -156,18 +100,6 @@ docker compose down
 docker compose up -d --build
 ```
 
-### Reiniciar todo (Desarrollo local)
-
-```bash
-# Backend
-venv\Scripts\activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Frontend (nueva terminal)
-cd frontend_ReactNativ
-npx expo start
-```
-
 ### Verificar que todo funciona
 
 ```bash
@@ -180,9 +112,4 @@ http://localhost:8000/health
 
 ---
 
-## Contacto
-
-Para problemas no cubiertos aquí:
-
-1. Revisa [CHANGELOG.md](CHANGELOG.md) para ver cambios recientes
-2. Revisa [frontend_ReactNativ/DEVELOPMENT.md](frontend_ReactNativ/DEVELOPMENT.md) para desarrollo del frontend móvil
+Para más información: [INSTALL_AND_RUN.md](./INSTALL_AND_RUN.md) · [TESTING.md](./TESTING.md) · [CHANGELOG.md](./CHANGELOG.md)

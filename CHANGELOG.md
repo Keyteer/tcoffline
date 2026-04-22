@@ -2,6 +2,61 @@
 
 ---
 
+## [2.0-beta09] - 2026-04-22
+
+### Modificado
+#### Backend — Control de sincronización automática
+- Añadida variable `AUTO_SYNC_ENABLED` (bool, default `true`) en `app/settings.py`
+- `startup_event()` en `app/main.py`: sync inicial y tareas periódicas (health check, loops downstream/upstream) solo se inician si `AUTO_SYNC_ENABLED=true`; con `false` el backend arranca limpio solo con endpoints disponibles
+- Los endpoints manuales `POST /sync/from-central` y `POST /sync/trigger` funcionan siempre independientemente del flag
+
+#### Docker Compose — Servicio único
+- Eliminado servicio `backend-dev` y anchor YAML `x-backend-base`
+- Un único servicio `backend`; el modo se controla editando `.env` y reiniciando
+- `DATABASE_URL` sigue siendo el único override a nivel compose (apunta al hostname `db`)
+
+#### Variables de entorno
+- `.env` actualizado con flags de desarrollo: `AUTO_SYNC_ENABLED=false`, `LOG_LEVEL=DEBUG`, `LOG_VERBOSE=true`
+- `.env.example` actualizado con defaults de producción: `AUTO_SYNC_ENABLED=true`, `LOG_LEVEL=WARNING`, `LOG_VERBOSE=false`
+
+---
+
+## [2.0-beta08] - 2026-04-22
+
+### Modificado
+#### Documentacion
+- `INSTALL_AND_RUN.md`: eliminado el bloque de instalacion/ejecucion local del backend (sin Docker)
+- `INSTALL_AND_RUN.md`: aclarado explicitamente que ejecutar backend fuera de Docker no esta soportado
+- `QUICK_FIXES.md`: eliminadas secciones de troubleshooting para backend local (Python/venv/alembic)
+- `QUICK_FIXES.md`: eliminado comando de reinicio para backend local
+
+---
+
+## [2.0-beta07] - 2026-04-21
+
+### Modificado
+#### Docker Compose — Perfiles prod / dev / test
+- Separación en tres perfiles: `prod` (default), `dev` y `test`
+- Perfil `prod`: `LOG_LEVEL=WARNING`, log rotation JSON (10 MB × 3 archivos), logs silenciosos
+- Perfil `dev`: `LOG_LEVEL=DEBUG`, `LOG_VERBOSE=true`, logs verbose en consola
+- Perfil `test`: sin cambios funcionales
+
+#### Sistema de Logging del Backend
+- `app/settings.py`: nuevas variables `LOG_LEVEL` y `LOG_VERBOSE`
+- `app/main.py`: configuración centralizada de logging desde settings; supresión total de uvicorn access log en prod; `LOG_VERBOSE=true` habilita request logging completo
+- `app/background_tasks.py`, `sync_service.py`, `outbox_processor.py`: eliminados `basicConfig` locales; logs periódicos de sync degradados a `DEBUG`; banners `=====` eliminados
+- `app/sync_service.py`: logs de conexión/desconexión del servidor central al cambiar estado; URL logueada al iniciar monitoreo; polling degradado a `DEBUG`
+- `entrypoint.sh`: `--log-level` de uvicorn leído desde `$LOG_LEVEL`
+
+#### Documentación — Reestructuración
+- `README.md`: simplificado a landing page con quick start y tabla de links a docs
+- `INSTALL_AND_RUN.md`: sección de perfiles Docker Compose, variables de logging, checklist producción; tests movidos a TESTING.md
+- `TESTING.md`: nuevo archivo — pytest backend, Jest frontend, guía de archivos .http con REST Client
+- `FUNCIONALIDADES.md`: sección "Desarrollo" (migraciones, variables) movida a INSTALL_AND_RUN.md
+- `QUICK_FIXES.md`: sección "Contacto" reemplazada por enlaces a docs relevantes
+
+---
+
 ## [2.0-beta06] - 2026-04-21
 
 ### Agregado
