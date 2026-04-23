@@ -202,6 +202,7 @@ export const lang_es = {
     local: 'Local',
     clinicUnit: 'Unidad Clínica',
     clinicUnitPlaceholder: 'Seleccionar ubicación...',
+    clinicUnitRequired: 'Debe seleccionar una ubicación',
     clinicUnitNoData: 'No hay ubicaciones disponibles para este tipo de episodio',
     clinicUnitNoDataSync: 'No hay ubicaciones disponibles. Sincronice datos del sistema central.',
     clinicUnitNoResults: 'No se encontraron ubicaciones',

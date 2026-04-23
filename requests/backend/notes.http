@@ -15,17 +15,23 @@ Content-Type: application/json
 }
 
 ### Create an episode to attach notes to
+### Same constraints as in `episodes.http`: valid `ubicacion`, required
+### `fecha_nacimiento`, OFFP/OFFE prefixes to drive the A28+A01 flow.
 # @name createEpisode
 POST {{baseUrl}}/episodes
 Authorization: Bearer {{loginRequest.response.body.access_token}}
 Content-Type: application/json
 
 {
-  "mrn": "MRN-NOTES-001",
-  "num_episodio": "EP-NOTES-001",
+  "mrn": "OFFP{{$randomInt 100000 999999}}",
+  "num_episodio": "OFFE{{$randomInt 100000 999999}}",
   "paciente": "Test Patient",
+  "sexo": "F",
+  "fecha_nacimiento": "1990-01-01T00:00:00",
   "tipo": "Ambulatorio",
-  "data_json": {"MRN": "MRN-NOTES-001", "NumEpisodio": "EP-NOTES-001"}
+  "ubicacion": "Consulta Telemedicina",
+  "estado": "Activo",
+  "data_json": {"Paciente": "Test Patient"}
 }
 
 ### ---------------------------------------------------

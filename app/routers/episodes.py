@@ -24,6 +24,12 @@ def create_episode(
             detail="Episode with this number already exists"
         )
 
+    if not episode.ubicacion or not episode.ubicacion.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ubicacion (location/CTLOC) is required"
+        )
+
     episode_data = episode.model_dump()
     episode_data.pop('pending_notes_count', None)
 
@@ -46,7 +52,7 @@ def create_episode(
         correlation_id=db_episode.num_episodio,
         hl7_payload=None,
         status="pending",
-        priority=2
+        priority=5
     )
     db.add(outbox_event)
     db.commit()
@@ -83,8 +89,14 @@ def get_unique_episode_types(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
-    """Get all unique episode types from database"""
+    """Get unique episode types from episodes confirmed by central (synced).
+
+    Restricting to ``synced_flag=True`` ensures the values offered to the user
+    correspond to codes the central server actually accepts, avoiding stale
+    or invalid values left over from rejected local episodes.
+    """
     types = db.query(models.Episode.tipo).filter(
+        models.Episode.synced_flag == True,
         models.Episode.tipo.isnot(None),
         models.Episode.tipo != ''
     ).distinct().order_by(models.Episode.tipo).all()
@@ -99,8 +111,13 @@ def get_unique_locations(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
-    """Get all unique locations from database, optionally filtered by episode type"""
+    """Get unique locations from episodes confirmed by central (synced).
+
+    Restricting to ``synced_flag=True`` avoids exposing locations created
+    locally that central later rejected (e.g. invalid CTLOC descriptions).
+    """
     query = db.query(models.Episode.ubicacion).filter(
+        models.Episode.synced_flag == True,
         models.Episode.ubicacion.isnot(None),
         models.Episode.ubicacion != ''
     )

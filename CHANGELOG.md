@@ -2,6 +2,82 @@
 
 ---
 
+## [2.0-beta15] - 2026-04-23
+
+### Corregido
+#### Notas clínicas fallaban inmediatamente en lugar de esperar a que el episodio se sincronizara
+
+**Problema 1 — Prioridad de eventos invertida:**  
+`episode_created` tenía `priority=2` y `clinical_note_created` tenía `priority=3`. Como el procesador ordena por `priority DESC`, las notas se procesaban *antes* que el episodio, encontraban IDs `OFFE*` no sincronizados y fallaban.
+
+- **Fix:** Cambiado `priority` de `episode_created` de `2` a `5` en `app/routers/episodes.py`. Ahora el orden garantizado es: episodio (5) → nota (3).
+
+**Problema 2 — NoneType error en `build_obr_segment`:**  
+`app/hl7_builder.py :: build_obr_segment` accedía a `most_recent_user.filtros` sin verificar si el usuario o el campo `filtros` era `None`, causando `'NoneType' object has no attribute 'split'` al construir ORU.
+
+- **Fix:** Añadida guarda defensiva en `build_obr_segment`: `user = ""` por defecto; el parseo de `filtros` solo se intenta si el campo existe, con `try/except`.
+
+**Resultado verificado (end-to-end):**  
+Crear episodio `OFFP*`/`OFFE*` + nota → trigger sync → en el mismo batch:  
+1. `episode_created` (priority 5) procesa primero → A28+A01 OK, IDs reales asignados  
+2. `clinical_note_created` (priority 3) procesa en el mismo batch → ORU OK, `synced_flag=true`  
+Ambos eventos terminan `status=sent`, `retry_count=0`.
+
+---
+
+## [2.0-beta13] - 2026-04-23
+
+### Modificado
+#### Requests HTTP — `episodes.http` y `notes.http` alineados con validaciones de central
+- Reemplazada `ubicacion` `Unidad Emergencia Adultos`/`Piso 3` por `Consulta Telemedicina` (CTLOC v\u00e1lido confirmado por central).
+- Eliminado `run` con d\u00edgito verificador inv\u00e1lido (central rechaza con `RUN ingresado invalido`).
+- A\u00f1adido `fecha_nacimiento` obligatorio (sin \u00e9l A28 falla con `Datatype validation failed on PAPerson:PAPERDob`).
+- Cambiados prefijos `MRN-TEST-XXX`/`EP-TEST-XXX` por `OFFP{{$randomInt}}`/`OFFE{{$randomInt}}` para:
+  - Evitar colisiones entre ejecuciones repetidas.
+  - Disparar el flujo secuencial A28 + A01 que asigna PID/enctid reales.
+- Documentado en comentarios al inicio de `Create episode` el contrato esperado por central.
+- Verificado end-to-end: payload nuevo \u2192 central asigna `MRN=000008258, NumEpisodio=A0000011315`, `synced_flag=true`.
+
+---
+
+## [2.0-beta12] - 2026-04-23
+
+### Modificado
+#### Backend — Endpoints `/types/unique` y `/locations/unique` filtran por episodios sincronizados
+- **Problema**: los dropdowns del frontend ofrecían valores de `tipo` y `ubicacion` provenientes de episodios locales que central nunca aceptó (p. ej. `Urgencias`), provocando errores `E^ Local No es válido^CTLOCDesc` al intentar sincronizar.
+- **Fix en `app/routers/episodes.py`**: ambos endpoints ahora filtran con `Episode.synced_flag == True`, garantizando que solo se exponen valores ya validados por central (p. ej. `Consulta Telemedicina`, `Unidad Emergencia Adultos`).
+- Verificado end-to-end: episodio creado local → A28 → A01 → `synced_flag=true`, MRN/NumEpisodio reemplazados por los de central.
+
+---
+
+## [2.0-beta11] - 2026-04-23
+
+### Corregido
+#### Backend — Respuestas `estado: NOK` de central tratadas como éxito
+- **Bug**: en `app/outbox_processor.py::send_hl7_message`, cualquier respuesta JSON que contuviera la clave `"estado"` se devolvía como `(True, "AA", data)` sin inspeccionar el valor. Con `{"estado":"NOK","reason":"..."}` el evento se marcaba como `sent` aunque central rechazara el mensaje.
+- **Fix**: ahora se compara `estado.upper() == "OK"` para considerar éxito; cualquier otro valor devuelve `(False, "AE", error_msg)` con `reason` incluido, activando el flujo normal de reintentos/fallo.
+
+#### Frontend — `data_json` enviado como string en creación de episodios
+- **Bug**: `NewEpisodeScreen.tsx` enviaba `data_json: JSON.stringify(episodeData)`, provocando error Pydantic `Input should be a valid dictionary` (el backend espera `dict`).
+- **Fix**:
+  - `frontend_ReactNativ/src/screens/NewEpisodeScreen.tsx`: se envía `data_json: episodeData` (objeto crudo).
+  - `frontend_ReactNativ/src/types/index.ts`: `EpisodeCreateRequest.data_json` cambia de `string` a `Record<string, unknown>` para alinear con el schema backend.
+
+---
+
+## [2.0-beta10] - 2026-04-22
+
+### Corregido
+#### Backend — Outbox processor: episodios locales con IDs reales no se enviaban a central
+- **Bug**: `process_episode_created_event` usaba el prefijo `OFFP`/`OFFE` como única señal de "episodio local". Episodios creados manualmente con IDs reales (ej. `EP-TEST-003`) eran marcados como `sent` sin enviar ningún mensaje HL7.
+- **Causa raíz**: la condición `if not (is_new_patient and is_new_episode)` asumía que cualquier episodio sin prefijos OFFP/OFFE provenía de central, ignorando `synced_flag`.
+- **Fix en `app/outbox_processor.py`**: se añadió comprobación de `episode.synced_flag`:
+  - `synced_flag=True` → episodio viene de central, se marca como enviado sin HL7 (comportamiento previo correcto).
+  - `synced_flag=False` + IDs reales → episodio creado localmente con paciente ya conocido en central → se envía `ADT^A01` directamente.
+  - `synced_flag=False` + prefijos OFFP/OFFE → flujo secuencial A28 + A01 (sin cambios).
+
+---
+
 ## [2.0-beta09] - 2026-04-22
 
 ### Modificado
