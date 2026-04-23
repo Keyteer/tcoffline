@@ -174,7 +174,7 @@ export interface EpisodeCreateRequest {
   estado?: string;
   profesional?: string;
   motivo_consulta?: string;
-  data_json: string;
+  data_json: Record<string, unknown>;
 }
 
 export interface ClinicalNoteCreateRequest {

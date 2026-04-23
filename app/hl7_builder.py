@@ -239,11 +239,14 @@ class HL7MessageBuilder:
                 models.User.active == True,
                 models.User.last_login.isnot(None)
             ).order_by(models.User.last_login.desc()).first()
-        
-        s=most_recent_user.filtros
-        user = dict(x.split('=') for x in s.split('&')).get('user')
 
-        
+        user = ""
+        if most_recent_user and most_recent_user.filtros:
+            try:
+                user = dict(x.split('=') for x in most_recent_user.filtros.split('&') if '=' in x).get('user', '')
+            except Exception:
+                pass
+
         obs_dt = self._format_datetime(observation_datetime) if observation_datetime else self._generate_timestamp()
 
         obr = f"OBR|{set_id}||{test_code}^{test_name}^LOCAL|||{obs_dt}|{obs_dt}|||||||||||||||||||||||||{user}"

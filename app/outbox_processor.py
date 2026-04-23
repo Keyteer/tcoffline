@@ -124,8 +124,14 @@ class OutboxProcessor:
                         data = response.json()
 
                         if "estado" in data:
-                            logger.info(f"ORU Response - estado: {data.get('estado')}, pid: {data.get('pid')}, enctid: {data.get('enctid')}")
-                            return True, "AA", data
+                            estado = str(data.get("estado", "")).upper()
+                            if estado == "OK":
+                                logger.info(f"ORU Response - estado: OK, pid: {data.get('pid')}, enctid: {data.get('enctid')}")
+                                return True, "AA", data
+                            reason = data.get("reason") or data.get("message") or ""
+                            error_msg = f"Central rejected message: estado={data.get('estado')} reason={reason}"
+                            logger.warning(error_msg)
+                            return False, "AE", error_msg
 
                         if "pid" in data or "enctid" in data:
                             logger.info(f"ADT Response - pid: {data.get('pid')}, enctid: {data.get('enctid')}")
@@ -328,6 +334,16 @@ class OutboxProcessor:
         episode = db.query(models.Episode).filter(models.Episode.num_episodio == num_episodio).first()
 
         if not episode:
+            # The episode may have already been synced in a previous run:
+            # after A28+A01 the num_episodio is replaced with the central enctid,
+            # so the original OFFE id stored in correlation_id no longer exists.
+            # Treat as successfully processed.
+            if str(event.correlation_id).startswith("OFFE"):
+                logger.info(f"Episode for event {event.id} no longer found by OFFE id — already synced, marking as sent")
+                event.status = "sent"
+                event.last_error = None
+                db.commit()
+                return True
             logger.error(f"Episode not found: {num_episodio}")
             event.status = "failed"
             event.last_error = "Episode not found"
@@ -343,10 +359,65 @@ class OutboxProcessor:
         is_new_episode = episode.num_episodio.startswith("OFFE")
 
         if not (is_new_patient and is_new_episode):
-            logger.info(f"Episode {num_episodio} - Already synced from central, marking event as sent")
+            if episode.synced_flag:
+                # Episode was pulled from central — no need to push it back
+                logger.info(f"Episode {num_episodio} - Synced from central, marking event as sent")
+                event.status = "sent"
+                event.last_error = None
+                db.commit()
+                return True
+
+            # Locally created with real IDs — patient already known to central, send A01 only
+            logger.info(f"=== A01-only HL7 Flow for Episode {num_episodio} (locally created, real IDs) ===")
+
+            patient_class = "E" if episode.tipo == "Urgencia" else "I" if episode.tipo == "Hospitalizacion" else "O"
+
+            a01_message, _ = self.hl7_builder.build_a01_message(
+                patient_id=episode.mrn,
+                rut=episode.run,
+                last_name=last_name,
+                first_name=first_name,
+                birth_date=episode.fecha_nacimiento,
+                sex=episode.sexo,
+                episode_id=episode.num_episodio,
+                patient_class=patient_class,
+                location=episode.habitacion,
+                admission_type=episode.tipo,
+                admission_datetime=episode.fecha_atencion,
+                motivo_consulta=episode.motivo_consulta,
+                clinical_unit=episode.ubicacion,
+                control_id=f"{event.id}_A01"
+            )
+
+            success, ack_code, a01_response_data = await self.send_hl7_message(a01_message, "ADT^A01")
+
+            if not success:
+                event.retry_count += 1
+                event.last_error = f"A01 failed: {str(a01_response_data)}"
+
+                if event.retry_count >= self.max_retries:
+                    event.status = "failed"
+                    logger.error(f"Event {event.id} failed after {event.retry_count} retries - A01 failed")
+                else:
+                    event.status = "pending"
+                    logger.warning(f"Event {event.id} - A01 failed, will retry (attempt {event.retry_count}/{self.max_retries})")
+
+                db.commit()
+                return False
+
+            real_enctid = self.extract_enctid_from_response(a01_response_data)
+            if real_enctid and real_enctid != episode.num_episodio:
+                old_num_episodio = episode.num_episodio
+                episode.num_episodio = real_enctid
+                logger.info(f"Episode ID updated from {old_num_episodio} to {real_enctid}")
+
+            episode.synced_flag = True
             event.status = "sent"
             event.last_error = None
+            event.hl7_payload = a01_message
             db.commit()
+
+            logger.info(f"=== A01-only Flow Complete for Episode {episode.num_episodio} ===")
             return True
 
         logger.info(f"=== Sequential HL7 Flow for Episode {num_episodio} ===")
@@ -558,6 +629,20 @@ class OutboxProcessor:
         hl7_message = self.generate_hl7_from_event(event, db)
 
         if not hl7_message:
+            # For clinical_note_created: if the episode is not yet synced with
+            # central (OFFP/OFFE prefix), defer rather than fail — the
+            # episode_created event will be processed first (it has an earlier
+            # created_at) and once that succeeds the note will be retried.
+            if event.event_type == "clinical_note_created":
+                note_id = int(event.correlation_id)
+                note = db.query(models.ClinicalNote).filter(models.ClinicalNote.id == note_id).first()
+                if note:
+                    episode = db.query(models.Episode).filter(models.Episode.id == note.episode_id).first()
+                    if episode and (episode.mrn.startswith("OFFP") or episode.num_episodio.startswith("OFFE")):
+                        logger.info(f"Event {event.id} deferred — episode {episode.num_episodio} not yet synced with central")
+                        # Do not increment retry_count; leave status as pending
+                        return False
+
             event.status = "failed"
             event.last_error = "Failed to generate HL7 message"
             event.retry_count += 1

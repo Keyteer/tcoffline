@@ -205,6 +205,7 @@ export const lang_en: TranslationKeys = {
     local: 'Local',
     clinicUnit: 'Clinical Unit',
     clinicUnitPlaceholder: 'Select location...',
+    clinicUnitRequired: 'A location must be selected',
     clinicUnitNoData: 'No locations available for this episode type',
     clinicUnitNoDataSync: 'No locations available. Sync data from central system.',
     clinicUnitNoResults: 'No locations found',

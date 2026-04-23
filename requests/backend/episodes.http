@@ -19,27 +19,29 @@ Content-Type: application/json
 ### ---------------------------------------------------
 
 ### Create episode
+###
+### NOTES 
+### - Use `OFFP`/`OFFE` prefixed IDs so the outbox triggers the full
+###   A28 + A01 sequential flow; central will assign the real PID/enctid.
+### - `{{$randomInt 100000 999999}}` keeps IDs unique between runs so reposts
+###   don't collide with previous test data.
 # @name createEpisode
 POST {{baseUrl}}/episodes
 Authorization: Bearer {{loginRequest.response.body.access_token}}
 Content-Type: application/json
 
 {
-  "mrn": "MRN-TEST-001",
-  "num_episodio": "EP-TEST-001",
-  "run": "12345678-9",
-  "paciente": "García López Juan",
+  "mrn": "OFFP{{$randomInt 100000 999999}}",
+  "num_episodio": "OFFE{{$randomInt 100000 999999}}",
+  "paciente": "Pacient prueba {{$localDatetime iso8601}}",
   "sexo": "M",
+  "fecha_nacimiento": "1985-04-12T00:00:00",
   "tipo": "Ambulatorio",
-  "hospital": "Hospital Central",
-  "ubicacion": "Urgencias",
+  "ubicacion": "Consulta Telemedicina",
   "estado": "Activo",
-  "profesional": "Dr. Test",
   "motivo_consulta": "Dolor abdominal",
   "data_json": {
-    "MRN": "MRN-TEST-001",
-    "NumEpisodio": "EP-TEST-001",
-    "Paciente": "García López, Juan"
+    "Paciente": "Pacient prueba {{$localDatetime iso8601}}"
   }
 }
 
@@ -56,13 +58,15 @@ GET {{baseUrl}}/episodes/{{createEpisode.response.body.id}}
 Authorization: Bearer {{loginRequest.response.body.access_token}}
 
 ### Update episode
+### Use a `ubicacion` that exists in central (CTLOC) — the previous example
+### `Piso 3` would be rejected on the next sync.
 PUT {{baseUrl}}/episodes/{{createEpisode.response.body.id}}
 Authorization: Bearer {{loginRequest.response.body.access_token}}
 Content-Type: application/json
 
 {
   "estado": "Alta",
-  "ubicacion": "Piso 3"
+  "ubicacion": "Consulta Telemedicina"
 }
 
 ### Delete episode

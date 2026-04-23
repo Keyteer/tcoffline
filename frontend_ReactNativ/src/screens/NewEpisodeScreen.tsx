@@ -114,6 +114,10 @@ export function NewEpisodeScreen({ navigation }: Props) {
       setError(t.newEpisode.required);
       return;
     }
+    if (!clinicUnit.trim()) {
+      setError(t.newEpisode.clinicUnitRequired);
+      return;
+    }
     if (!noDocument && rutError) {
       setError(rutError);
       return;
@@ -167,7 +171,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
         ubicacion: clinicUnit || '',
         estado: 'Activo',
         motivo_consulta: motivoConsulta,
-        data_json: JSON.stringify(episodeData),
+        data_json: episodeData,
       };
 
       if (!isBackendReachable) {
