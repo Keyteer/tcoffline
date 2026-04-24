@@ -529,3 +529,151 @@ class HL7MessageBuilder:
 
         message = f"{msh}\r{evn}\r{pid}\r{pv1}\r"
         return message, control_id
+
+    def build_a11_message(
+        self,
+        patient_id: str,
+        rut: Optional[str],
+        last_name: str,
+        first_name: str,
+        birth_date: datetime,
+        sex: str,
+        episode_id: str,
+        event_datetime: Optional[datetime] = None,
+        control_id: Optional[str] = None
+    ) -> tuple[str, str]:
+        """
+        Build ADT^A11 (Cancel Admit/Visit Notification) message.
+        Used to undo an erroneous A01/A04.
+
+        Returns:
+            Tuple of (message, control_id)
+        """
+        if not control_id:
+            control_id = self._generate_control_id()
+
+        if event_datetime is None:
+            event_datetime = datetime.utcnow()
+
+        msh = self.build_msh_segment("ADT", "A11", control_id)
+        evn = self.build_evn_segment("A11", event_datetime)
+        pid = self.build_pid_segment(patient_id, rut, last_name, first_name, birth_date, sex)
+        pv1 = self.build_pv1_segment(
+            episode_id=episode_id,
+            patient_class="O",
+            location=None,
+            admission_type=None,
+            admission_datetime=event_datetime
+        )
+
+        message = f"{msh}\r{evn}\r{pid}\r{pv1}\r"
+        return message, control_id
+
+    def build_a13_message(
+        self,
+        patient_id: str,
+        rut: Optional[str],
+        last_name: str,
+        first_name: str,
+        birth_date: datetime,
+        sex: str,
+        episode_id: str,
+        event_datetime: Optional[datetime] = None,
+        control_id: Optional[str] = None
+    ) -> tuple[str, str]:
+        """
+        Build ADT^A13 (Cancel Discharge) message.
+        Used to undo an erroneous A03.
+
+        Returns:
+            Tuple of (message, control_id)
+        """
+        if not control_id:
+            control_id = self._generate_control_id()
+
+        if event_datetime is None:
+            event_datetime = datetime.utcnow()
+
+        msh = self.build_msh_segment("ADT", "A13", control_id)
+        evn = self.build_evn_segment("A13", event_datetime)
+        pid = self.build_pid_segment(patient_id, rut, last_name, first_name, birth_date, sex)
+        pv1 = self.build_pv1_segment(
+            episode_id=episode_id,
+            patient_class="O",
+            location=None,
+            admission_type=None,
+            admission_datetime=event_datetime
+        )
+
+        message = f"{msh}\r{evn}\r{pid}\r{pv1}\r"
+        return message, control_id
+
+    def build_a23_message(
+        self,
+        patient_id: str,
+        rut: Optional[str],
+        last_name: str,
+        first_name: str,
+        birth_date: datetime,
+        sex: str,
+        episode_id: str,
+        event_datetime: Optional[datetime] = None,
+        control_id: Optional[str] = None
+    ) -> tuple[str, str]:
+        """
+        Build ADT^A23 (Delete a Patient Record) message.
+        Used to delete visit/episode-level data while keeping the person record.
+
+        Returns:
+            Tuple of (message, control_id)
+        """
+        if not control_id:
+            control_id = self._generate_control_id()
+
+        if event_datetime is None:
+            event_datetime = datetime.utcnow()
+
+        msh = self.build_msh_segment("ADT", "A23", control_id)
+        evn = self.build_evn_segment("A23", event_datetime)
+        pid = self.build_pid_segment(patient_id, rut, last_name, first_name, birth_date, sex)
+        pv1 = self.build_pv1_segment(
+            episode_id=episode_id,
+            patient_class="O",
+            location=None,
+            admission_type=None,
+            admission_datetime=event_datetime
+        )
+
+        message = f"{msh}\r{evn}\r{pid}\r{pv1}\r"
+        return message, control_id
+
+    def build_a29_message(
+        self,
+        patient_id: str,
+        rut: Optional[str],
+        last_name: str,
+        first_name: str,
+        birth_date: datetime,
+        sex: str,
+        event_datetime: Optional[datetime] = None,
+        control_id: Optional[str] = None
+    ) -> tuple[str, str]:
+        """
+        Build ADT^A29 (Delete Person Information) message.
+        Used to remove a patient (PID-level) entirely from the central system.
+
+        Returns:
+            Tuple of (message, control_id)
+        """
+        if not control_id:
+            control_id = self._generate_control_id()
+
+        if event_datetime is None:
+            event_datetime = datetime.utcnow()
+
+        msh = self.build_msh_segment("ADT", "A29", control_id)
+        evn = self.build_evn_segment("A29", event_datetime)
+        pid = self.build_pid_segment(patient_id, rut, last_name, first_name, birth_date, sex)
+
+        message = f"{msh}\r{evn}\r{pid}\r"
+        return message, control_id

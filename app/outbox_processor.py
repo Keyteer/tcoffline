@@ -611,6 +611,40 @@ class OutboxProcessor:
         db.commit()
         return success
 
+    async def process_prebuilt_payload_event(self, event: models.OutboxEvent, db: Session) -> bool:
+        """
+        Send an event whose HL7 payload was built at the originating router
+        (used for delete/cancel events where the source row may no longer exist).
+        """
+        if not event.hl7_payload:
+            event.status = "failed"
+            event.last_error = f"No prebuilt HL7 payload for event type {event.event_type}"
+            event.retry_count += 1
+            db.commit()
+            logger.error(event.last_error)
+            return False
+
+        msg_type = self.extract_message_type(event.hl7_payload)
+        success, ack_code, response_data = await self.send_hl7_message(event.hl7_payload, msg_type)
+
+        if success:
+            event.status = "sent"
+            event.last_error = None
+            logger.info(f"Event {event.id} ({event.event_type}) sent successfully as {msg_type}")
+        else:
+            event.retry_count += 1
+            event.last_error = str(response_data) if response_data else "Unknown error"
+
+            if event.retry_count >= self.max_retries:
+                event.status = "failed"
+                logger.error(f"Event {event.id} failed after {event.retry_count} retries")
+            else:
+                event.status = "pending"
+                logger.warning(f"Event {event.id} ({msg_type}) failed, will retry (attempt {event.retry_count}/{self.max_retries})")
+
+        db.commit()
+        return success
+
     async def process_event(self, event: models.OutboxEvent, db: Session) -> bool:
         """
         Process a single outbox event.
@@ -625,6 +659,14 @@ class OutboxProcessor:
 
         if event.event_type == "episode_updated":
             return await self.process_episode_updated_event(event, db)
+
+        if event.event_type in (
+            "episode_deleted",
+            "episode_admit_cancelled",
+            "episode_discharge_cancelled",
+            "patient_deleted",
+        ):
+            return await self.process_prebuilt_payload_event(event, db)
 
         hl7_message = self.generate_hl7_from_event(event, db)
 
