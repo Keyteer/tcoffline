@@ -74,6 +74,41 @@ DELETE {{baseUrl}}/episodes/{{createEpisode.response.body.id}}
 Authorization: Bearer {{loginRequest.response.body.access_token}}
 
 ### ---------------------------------------------------
+### Patient delete (ADT^A29) — closes the patient lifecycle
+### ---------------------------------------------------
+###
+### Deletes the patient (person) record AND all of their local episodes.
+### For each synced episode an ADT^A23 is enqueued; for the patient itself
+### an ADT^A29 is enqueued. Local-only IDs (OFFP*/OFFE*) are removed
+### without notifying central.
+###
+### Typical close-out flow:
+###   1. createEpisode  → A28 + A01 (sync assigns real PID/enctid)
+###   2. POST a clinical note (optional) → ORU^R01
+###   3. PUT episode (e.g. estado=Alta) → A08
+###   4. DELETE patient by MRN → A23 (per episode) + A29 (person)
+###
+### Use the MRN returned by createEpisode AFTER it has been synced with
+### central (it will no longer start with OFFP).
+
+### Step A — Re-fetch the episode to get the (post-sync) real MRN
+# @name fetchForDelete
+GET {{baseUrl}}/episodes/{{createEpisode.response.body.id}}
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Step B — Delete the patient by real MRN
+DELETE {{baseUrl}}/patients/{{fetchForDelete.response.body.mrn}}
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Step C — Trigger upstream sync so A23/A29 are sent to central
+POST {{baseUrl}}/sync/trigger
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### Step D — Verify the episode no longer exists locally
+GET {{baseUrl}}/episodes/{{createEpisode.response.body.id}}
+Authorization: Bearer {{loginRequest.response.body.access_token}}
+
+### ---------------------------------------------------
 ### Unique values
 ### ---------------------------------------------------
 

@@ -25,6 +25,24 @@ Ambos eventos terminan `status=sent`, `retry_count=0`.
 
 ---
 
+## [2.0-beta14] - 2026-04-23
+
+### Añadido
+#### Soporte HL7 v2.5 para eliminación y cancelación de episodios/pacientes
+- Nuevos builders en `app/hl7_builder.py`:
+  - `build_a08_message` — ADT^A08 (Update Patient Information).
+  - `build_a11_message` — ADT^A11 (Cancel Admit/Visit Notification).
+  - `build_a13_message` — ADT^A13 (Cancel Discharge).
+  - `build_a23_message` — ADT^A23 (Delete a Patient Record / visit-level).
+  - `build_a29_message` — ADT^A29 (Delete Person Information / patient-level).
+- Outbox processor: nuevos handlers para eventos `episode_updated`, `episode_deleted`, `episode_admit_cancelled`, `episode_discharge_cancelled`, `patient_deleted`.
+- `process_prebuilt_payload_event`: envía HL7 ya construido en la ruta originadora (necesario para deletes, donde la fila ya no existe al procesar).
+- `DELETE /episodes/{id}`: ahora construye y encola un ADT^A23 antes de borrar (solo para episodios sincronizados con central; los `OFFP/OFFE` se borran sin notificar).
+- Nuevo router `app/routers/patients.py` con `DELETE /patients/{mrn}`: borra el paciente y todos sus episodios locales, encolando ADT^A23 por cada episodio sincronizado y un ADT^A29 final para el paciente. Pacientes/episodios `OFFP*`/`OFFE*` se eliminan sin notificar a central.
+- `requests/backend/episodes.http`: añadida sección "Patient delete (ADT^A29)" con el flujo de cierre completo (re-fetch del MRN real, delete patient, trigger sync, verify).
+
+---
+
 ## [2.0-beta13] - 2026-04-23
 
 ### Modificado
