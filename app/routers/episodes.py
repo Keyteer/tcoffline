@@ -5,7 +5,6 @@ from typing import List, Optional
 from app import models, schemas
 from app.db import get_db
 from app.auth_utils import get_current_active_user
-from app.hl7_builder import HL7MessageBuilder
 
 router = APIRouter(prefix="/episodes", tags=["episodes"])
 
@@ -198,82 +197,3 @@ def get_episode(
         **episode.__dict__,
         "data": episode.get_json_data()
     }
-
-
-@router.put("/{episode_id}", response_model=schemas.Episode)
-def update_episode(
-    episode_id: int,
-    episode_update: schemas.EpisodeUpdate,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
-):
-    db_episode = db.query(models.Episode).filter(models.Episode.id == episode_id).first()
-    if not db_episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Episode not found"
-        )
-
-    update_data = episode_update.model_dump(exclude_unset=True)
-
-    for field, value in update_data.items():
-        setattr(db_episode, field, value)
-
-    db.commit()
-    db.refresh(db_episode)
-
-    outbox_event = models.OutboxEvent(
-        event_type="episode_updated",
-        correlation_id=db_episode.num_episodio,
-        hl7_payload=None,
-        status="pending",
-        priority=2
-    )
-    db.add(outbox_event)
-    db.commit()
-
-    return db_episode
-
-
-@router.delete("/{episode_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_episode(
-    episode_id: int,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user)
-):
-    db_episode = db.query(models.Episode).filter(models.Episode.id == episode_id).first()
-    if not db_episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Episode not found"
-        )
-
-    is_synced_with_central = not (
-        db_episode.mrn.startswith("OFFP") or db_episode.num_episodio.startswith("OFFE")
-    )
-
-    if is_synced_with_central:
-        full_name = db_episode.paciente if db_episode.paciente else "Unknown Patient"
-        builder = HL7MessageBuilder()
-        a23_message, _ = builder.build_a23_message(
-            patient_id=db_episode.mrn,
-            rut=db_episode.run,
-            last_name=full_name,
-            first_name="",
-            birth_date=db_episode.fecha_nacimiento,
-            sex=db_episode.sexo,
-            episode_id=db_episode.num_episodio,
-        )
-
-        outbox_event = models.OutboxEvent(
-            event_type="episode_deleted",
-            correlation_id=db_episode.num_episodio,
-            hl7_payload=a23_message,
-            status="pending",
-            priority=2
-        )
-        db.add(outbox_event)
-
-    db.delete(db_episode)
-    db.commit()
-    return None

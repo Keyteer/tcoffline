@@ -90,51 +90,6 @@ class TestGetEpisode:
         assert resp.status_code == 404
 
 
-class TestUpdateEpisode:
-    def test_update_episode(self, client, user_headers, db):
-        create = client.post("/episodes", json=make_episode_payload(
-            num_episodio="UPD-1",
-        ), headers=user_headers)
-        ep_id = create.json()["id"]
-
-        resp = client.put(f"/episodes/{ep_id}", json={
-            "estado": "Alta",
-            "ubicacion": "Piso 3",
-        }, headers=user_headers)
-        assert resp.status_code == 200
-        assert resp.json()["estado"] == "Alta"
-        assert resp.json()["ubicacion"] == "Piso 3"
-
-        # Verify outbox event for update
-        outbox = db.query(models.OutboxEvent).filter(
-            models.OutboxEvent.event_type == "episode_updated",
-            models.OutboxEvent.correlation_id == "UPD-1",
-        ).first()
-        assert outbox is not None
-
-    def test_update_episode_not_found(self, client, user_headers):
-        resp = client.put("/episodes/99999", json={"estado": "X"}, headers=user_headers)
-        assert resp.status_code == 404
-
-
-class TestDeleteEpisode:
-    def test_delete_episode(self, client, user_headers):
-        create = client.post("/episodes", json=make_episode_payload(
-            num_episodio="DEL-1",
-        ), headers=user_headers)
-        ep_id = create.json()["id"]
-
-        resp = client.delete(f"/episodes/{ep_id}", headers=user_headers)
-        assert resp.status_code == 204
-
-        get_resp = client.get(f"/episodes/{ep_id}", headers=user_headers)
-        assert get_resp.status_code == 404
-
-    def test_delete_episode_not_found(self, client, user_headers):
-        resp = client.delete("/episodes/99999", headers=user_headers)
-        assert resp.status_code == 404
-
-
 class TestUniqueValues:
     def _seed(self, client, headers):
         for i, (tipo, ubi) in enumerate([

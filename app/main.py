@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, episodes, notes, general, sync, patients
+from app.routers import auth, episodes, notes, general, sync
 from app.db import Base, engine
 from app.settings import settings
 import asyncio
@@ -113,7 +113,6 @@ app.include_router(auth.router)
 app.include_router(episodes.router)
 app.include_router(notes.router)
 app.include_router(sync.router)
-app.include_router(patients.router)
 
 
 @app.get("/")

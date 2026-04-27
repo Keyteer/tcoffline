@@ -2,6 +2,35 @@
 
 ---
 
+## [2.0-beta16] - 2026-04-27
+
+### Eliminado
+#### Reversión de mensajes HL7 no soportados por TrakCare central
+El endpoint central `Custom.REST.TrakCareOffline.HL7Inbound` solo procesa
+`ADT^A28`, `ADT^A01`, `ADT^A03` y `ORU^R01` (estado del builder en commit
+`aff3801`). Los mensajes añadidos en beta14 no tienen handler upstream y
+quedaban sin efecto, por lo que se retiran tanto los builders como los
+endpoints/handlers locales que los producían:
+
+- `app/hl7_builder.py`: eliminados `build_a08_message`, `build_a11_message`,
+  `build_a13_message`, `build_a23_message`, `build_a29_message`.
+- `app/routers/episodes.py`: eliminados `PUT /episodes/{id}` (A08) y
+  `DELETE /episodes/{id}` (A23). Se conserva una nota explicativa en el archivo.
+- `app/routers/patients.py`: archivo eliminado (`DELETE /patients/{mrn}` enviaba
+  A23+A29). Removido también del `app.include_router` en `app/main.py`.
+- `app/outbox_processor.py`: eliminados `process_episode_updated_event` y
+  `process_prebuilt_payload_event`, así como el dispatch de los event types
+  `episode_updated`, `episode_deleted`, `episode_admit_cancelled`,
+  `episode_discharge_cancelled`, `patient_deleted`.
+- Tests actualizados: removidos `TestUpdateEpisode`/`TestDeleteEpisode` en
+  `tests/test_episodes.py` y `TestEpisodeUpdatedFlow` en
+  `tests/test_integration_hl7_flow.py`.
+
+Estos endpoints/mensajes podrán reintroducirse cuando central agregue soporte
+para los message types correspondientes.
+
+---
+
 ## [2.0-beta15] - 2026-04-23
 
 ### Corregido
