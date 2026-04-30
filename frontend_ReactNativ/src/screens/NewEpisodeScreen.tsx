@@ -20,12 +20,13 @@ import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { MicButton } from '../components/MicButton';
+import { CommandMicButton } from '../components/CommandMicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { api } from '../lib/api';
 import { offlineCache } from '../lib/offlineCache';
 import { mutationQueue } from '../lib/mutationQueue';
 import { formatRUT, getRUTError } from '../lib/rutValidation';
-import { parseSpokenDate, cleanSpokenRut, parseSpokenName } from '../lib/speechParsers';
+import { parseSpokenDate, cleanSpokenRut, parseSpokenName, fuzzyMatchOption } from '../lib/speechParsers';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -58,6 +59,82 @@ export function NewEpisodeScreen({ navigation }: Props) {
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [showSexPicker, setShowSexPicker] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
+
+  // ----- Command mic (hands-free dictation) -----
+  type CommandField =
+    | 'firstName'
+    | 'lastName'
+    | 'rut'
+    | 'noDocument'
+    | 'birthDate'
+    | 'sex'
+    | 'episodeType'
+    | 'roomBox'
+    | 'clinicUnit'
+    | 'motivoConsulta';
+  const [activeCmdField, setActiveCmdField] = useState<CommandField | null>(null);
+  const [cmdInterim, setCmdInterim] = useState('');
+
+  const commandVocab = t.speech.command.fields as Record<CommandField, string[]>;
+  const fieldDisplayName = (f: CommandField | null): string =>
+    f ? commandVocab[f]?.[0] ?? f : '';
+
+  const handleCommandSegment = (field: CommandField, raw: string) => {
+    const value = raw.trim();
+    // `noDocument` is a toggle — fires even with no following value.
+    if (field === 'noDocument') {
+      setNoDocument((prev) => {
+        const next = !prev;
+        if (next) {
+          setRut('');
+          setRutError(null);
+        }
+        return next;
+      });
+      return;
+    }
+    if (!value) return;
+    switch (field) {
+      case 'firstName':
+        setFirstName(parseSpokenName(value));
+        break;
+      case 'lastName':
+        setLastName(parseSpokenName(value));
+        break;
+      case 'rut': {
+        const cleaned = cleanSpokenRut(value);
+        const formatted = formatRUT(cleaned);
+        setRut(formatted);
+        if (!noDocument) setRutError(getRUTError(formatted));
+        break;
+      }
+      case 'birthDate':
+        setBirthDate(parseSpokenDate(value));
+        break;
+      case 'sex': {
+        const sexAliases = t.speech.command.sexValues as Record<string, string[]>;
+        const matched = fuzzyMatchOption(value, sexAliases);
+        if (matched) setSex(matched);
+        break;
+      }
+      case 'episodeType': {
+        const matched = fuzzyMatchOption(value, availableEpisodeTypes);
+        if (matched) setEpisodeType(matched);
+        break;
+      }
+      case 'roomBox':
+        setLocationRoomBox(value);
+        break;
+      case 'clinicUnit': {
+        const matched = fuzzyMatchOption(value, availableLocations);
+        if (matched) setClinicUnit(matched);
+        break;
+      }
+      case 'motivoConsulta':
+        setMotivoConsulta(value);
+        break;
+    }
+  };
 
   useEffect(() => {
     const loadEpisodeTypes = async () => {
@@ -221,6 +298,18 @@ export function NewEpisodeScreen({ navigation }: Props) {
       borderColor: colors.border,
     },
     sectionTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 12 },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+    sectionHeaderTitle: { fontSize: 16, fontWeight: '600', color: colors.text, flex: 1 },
+    cmdBanner: {
+      backgroundColor: colors.primaryLight,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginBottom: 12,
+    },
+    cmdBannerTitle: { fontSize: 12, color: colors.primary, fontWeight: '600' },
+    cmdBannerText: { fontSize: 14, color: colors.text, marginTop: 2 },
+    cmdBannerHint: { fontSize: 11, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' },
     divider: { height: 1, backgroundColor: colors.border, marginVertical: 16 },
     label: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, marginBottom: 6 },
     required: { color: colors.error },
@@ -372,7 +461,26 @@ export function NewEpisodeScreen({ navigation }: Props) {
           <OfflineBanner />
 
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>{t.newEpisode.patientData}</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionHeaderTitle}>{t.newEpisode.patientData}</Text>
+              <CommandMicButton<CommandField>
+                vocab={commandVocab}
+                nextAliases={t.speech.command.next}
+                onSegment={handleCommandSegment}
+                onActiveFieldChange={setActiveCmdField}
+                onInterim={setCmdInterim}
+              />
+            </View>
+
+            {(activeCmdField || cmdInterim) ? (
+              <View style={styles.cmdBanner}>
+                <Text style={styles.cmdBannerTitle}>
+                  {t.speech.command.activeField}: {fieldDisplayName(activeCmdField)}
+                </Text>
+                {cmdInterim ? <Text style={styles.cmdBannerText}>{cmdInterim}</Text> : null}
+                <Text style={styles.cmdBannerHint}>{t.speech.command.hint}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.row}>
               <View style={styles.half}>

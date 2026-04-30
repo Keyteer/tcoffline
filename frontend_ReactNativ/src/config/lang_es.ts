@@ -304,6 +304,36 @@ export const lang_es = {
     permissionDenied: 'Permiso de micrófono denegado',
     unsupported: 'Dictado no disponible en este dispositivo o navegador',
     errorGeneric: 'Error en el reconocimiento de voz',
+    command: {
+      start: 'Dictado por comandos',
+      stop: 'Detener dictado por comandos',
+      hint: 'Diga el nombre del campo seguido del valor. Ej: "nombre Juan apellidos Pérez sexo masculino tipo urgencia".',
+      activeField: 'Campo activo',
+      noMatch: 'No se reconoció ningún campo',
+      // Meta keywords: switch to the next field in declared order.
+      next: ['siguiente', 'siguiente campo', 'próximo', 'próximo campo'],
+      // Field aliases: spoken keywords that switch the active field.
+      // The first alias is also used as the display name.
+      fields: {
+        firstName: ['nombre', 'nombres', 'primer nombre'],
+        lastName: ['apellido', 'apellidos', 'segundo apellido'],
+        rut: ['rut', 'run', 'documento', 'identificación', 'cédula'],
+        noDocument: ['sin documento', 'sin rut', 'no id', 'sin id', 'no documento'],
+        birthDate: ['fecha de nacimiento', 'nacimiento', 'fecha nacimiento', 'cumpleaños'],
+        sex: ['sexo', 'género'],
+        episodeType: ['tipo', 'tipo de episodio', 'episodio'],
+        roomBox: ['habitación', 'box', 'sala', 'cama'],
+        clinicUnit: ['ubicación', 'unidad', 'unidad clínica', 'servicio'],
+        motivoConsulta: ['motivo', 'motivo de consulta', 'motivo de la consulta' , 'consulta', 'razón'],
+      },
+      // Value aliases for fixed-option pickers.
+      sexValues: {
+        M: ['masculino', 'hombre', 'varón', 'macho'],
+        F: ['femenino', 'mujer', 'hembra'],
+        O: ['otro', 'otra', 'no binario'],
+        U: ['desconocido', 'no especificado', 'sin especificar'],
+      },
+    },
   },
 };
 

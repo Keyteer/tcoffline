@@ -8,6 +8,13 @@ export interface SpeechStartOptions {
   lang?: string;
   continuous?: boolean;
   interim?: boolean;
+  /**
+   * When true, this session is not aborted by `stopActiveSpeechRecognition()`
+   * (used by the screen-level tap-anywhere handler). The hands-free
+   * command mic uses this so the user can tap fields/pickers while
+   * continuing to dictate.
+   */
+  protectFromExternalStop?: boolean;
 }
 
 export interface UseSpeechRecognitionResult {
@@ -29,17 +36,19 @@ type UnsubscribeFn = () => void;
  * Only one MicButton can be listening at a time: when a new session starts
  * (or the user taps anywhere else), the previous one is aborted.
  */
-let activeSession: { abort: () => void } | null = null;
+let activeSession: { abort: () => void; protectedFromExternal?: boolean } | null = null;
 
 /**
  * Aborts whichever speech-recognition session is currently running, if any.
  * Safe to call from anywhere (e.g. a screen-level tap handler) and a no-op
- * when nothing is active.
+ * when nothing is active. Sessions started with `protectFromExternalStop`
+ * are left untouched (the command mic uses this).
  */
 export function stopActiveSpeechRecognition(): void {
   const current = activeSession;
-  activeSession = null;
   if (!current) return;
+  if (current.protectedFromExternal) return;
+  activeSession = null;
   try {
     current.abort();
   } catch {
@@ -168,7 +177,13 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
       }
 
       // Abort any other in-flight session so only one mic is ever active.
-      stopActiveSpeechRecognition();
+      // We bypass the protection flag here because starting a new session
+      // explicitly supersedes any previous one.
+      const prev = activeSession;
+      activeSession = null;
+      if (prev) {
+        try { prev.abort(); } catch { /* ignore */ }
+      }
 
       setError(null);
       setTranscript('');
@@ -211,6 +226,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
       // indicator even if the native `end`/`error` event arrives later (or
       // not at all, which can happen on some Android engines after abort).
       const sessionHandle = {
+        protectedFromExternal: opts.protectFromExternalStop === true,
         abort: () => {
           try {
             Module.abort();
