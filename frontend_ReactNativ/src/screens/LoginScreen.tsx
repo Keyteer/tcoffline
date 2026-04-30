@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
@@ -277,9 +278,10 @@ export function LoginScreen({ navigation }: Props) {
   });
 
   return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
     <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <TouchableOpacity
         style={styles.infoButton}
@@ -406,5 +408,6 @@ export function LoginScreen({ navigation }: Props) {
         </>
       )}
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

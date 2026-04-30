@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -288,18 +289,18 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <Header navigation={navigation} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (!episode) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <Header navigation={navigation} />
         <View style={styles.errorPage}>
           <Text style={styles.errorPageText}>{t.clinicalNote.episodeNotFound}</Text>
@@ -310,14 +311,14 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
             <Text style={styles.submitButtonText}>{t.clinicalNote.backToEpisodes}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Header navigation={navigation} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Episodes')}>
             <Text style={styles.backText}>← {t.clinicalNote.backToEpisodes}</Text>
@@ -483,6 +484,6 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
           episodeData={episode.data}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }

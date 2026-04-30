@@ -8,6 +8,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -20,7 +21,7 @@ import type { Episode, EpisodeType, SyncStats } from '../types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
-const EPISODES_REFRESH_INTERVAL = 15000;
+import { EPISODES_REFRESH_INTERVAL } from '../config/env';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Episodes'>;
@@ -236,7 +237,7 @@ export function EpisodesScreen({ navigation }: Props) {
   });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Header navigation={navigation} />
 
       <View style={styles.content}>
@@ -328,6 +329,6 @@ export function EpisodesScreen({ navigation }: Props) {
           />
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

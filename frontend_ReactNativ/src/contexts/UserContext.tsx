@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { api } from '../lib/api';
 import { auth } from '../lib/auth';
+import { READ_ONLY_CHECK_INTERVAL } from '../config/env';
 import type { User } from '../types';
 
 interface UserContextType {
@@ -77,7 +78,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) return;
 
-    const interval = setInterval(checkReadOnlyMode, 8000);
+    const interval = setInterval(checkReadOnlyMode, READ_ONLY_CHECK_INTERVAL);
     return () => clearInterval(interval);
   }, [user]);
 

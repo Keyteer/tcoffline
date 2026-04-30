@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { AppState, AppStateStatus } from 'react-native';
 import { api } from '../lib/api';
 import { mutationQueue } from '../lib/mutationQueue';
+import { CONNECTIVITY_POLL_INTERVAL } from '../config/env';
 import type { PendingMutation } from '../lib/mutationQueue';
 import type { EpisodeCreateRequest, ClinicalNoteCreateRequest } from '../types';
 
@@ -14,7 +15,6 @@ interface ConnectivityContextType {
 
 const ConnectivityContext = createContext<ConnectivityContextType | undefined>(undefined);
 
-const POLL_INTERVAL = 10000; // 10 seconds
 
 export function ConnectivityProvider({ children }: { children: ReactNode }) {
   const [isBackendReachable, setIsBackendReachable] = useState(true);
@@ -85,7 +85,7 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
   // Initial check + polling
   useEffect(() => {
     checkBackend();
-    const interval = setInterval(checkBackend, POLL_INTERVAL);
+    const interval = setInterval(checkBackend, CONNECTIVITY_POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [checkBackend]);
 

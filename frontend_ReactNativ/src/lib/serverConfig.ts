@@ -1,14 +1,30 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEFAULT_SERVER_URL, CONNECTION_TEST_TIMEOUT } from '../config/env';
 
 const SERVER_URL_KEY = 'trakcare_server_url';
-const DEFAULT_SERVER_URL = process.env.EXPO_PUBLIC_SERVER_URL || 'http://172.18.9.145:8000';
+/** Key that records which default URL was active when the user last saved nothing. */
+const SERVER_URL_DEFAULT_SNAPSHOT_KEY = 'trakcare_server_url_default_snapshot';
 
 let cachedServerUrl: string | null = null;
 
 export async function getServerUrl(): Promise<string> {
   if (cachedServerUrl) return cachedServerUrl;
   const stored = await AsyncStorage.getItem(SERVER_URL_KEY);
-  cachedServerUrl = stored || DEFAULT_SERVER_URL;
+  if (stored) {
+    // If the stored URL was never explicitly set by the user (it equals the
+    // snapshot of the default from the previous build), discard it so the
+    // current EXPO_PUBLIC_SERVER_URL takes effect automatically.
+    const snapshot = await AsyncStorage.getItem(SERVER_URL_DEFAULT_SNAPSHOT_KEY);
+    if (snapshot && stored === snapshot && stored !== DEFAULT_SERVER_URL) {
+      await AsyncStorage.removeItem(SERVER_URL_KEY);
+      await AsyncStorage.removeItem(SERVER_URL_DEFAULT_SNAPSHOT_KEY);
+      cachedServerUrl = DEFAULT_SERVER_URL;
+    } else {
+      cachedServerUrl = stored;
+    }
+  } else {
+    cachedServerUrl = DEFAULT_SERVER_URL;
+  }
   return cachedServerUrl as string;
 }
 
@@ -22,6 +38,8 @@ export async function setServerUrl(url: string): Promise<void> {
   const normalized = url.replace(/\/+$/, '');
   cachedServerUrl = normalized;
   await AsyncStorage.setItem(SERVER_URL_KEY, normalized);
+  // Clear the default-snapshot so this explicit URL is never auto-discarded
+  await AsyncStorage.removeItem(SERVER_URL_DEFAULT_SNAPSHOT_KEY);
 }
 
 export async function clearServerUrl(): Promise<void> {
@@ -34,16 +52,14 @@ export function hasStoredServerUrl(): boolean {
 }
 
 export async function loadServerUrl(): Promise<string> {
-  const stored = await AsyncStorage.getItem(SERVER_URL_KEY);
-  cachedServerUrl = stored || DEFAULT_SERVER_URL;
-  return cachedServerUrl as string;
+  return getServerUrl();
 }
 
 export async function testConnection(url: string): Promise<boolean> {
   try {
     const normalized = url.replace(/\/+$/, '');
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), CONNECTION_TEST_TIMEOUT);
     const response = await fetch(`${normalized}/health`, {
       signal: controller.signal,
     });

@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import {
@@ -181,7 +182,7 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
 
   if (autoTrying) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]} edges={['top', 'bottom', 'left', 'right']}>
         <Animated.View style={[styles.iconCircle, { transform: [{ scale: pulseAnim }] }]}>
           <Text style={styles.icon}>📡</Text>
         </Animated.View>
@@ -189,13 +190,13 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
         <Text style={styles.tryingText}>
           {d.tryingDefault} {getServerUrlSync()}
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (autoFailed) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 32 }]}>
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 32 }]} edges={['top', 'bottom', 'left', 'right']}>
         <View style={styles.iconCircle}>
           <Text style={styles.icon}>📡</Text>
         </View>
@@ -217,12 +218,12 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
             <Text style={styles.offlineButtonText}>{d.resumeLastConnection}</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={styles.iconCircle}>
@@ -277,6 +278,6 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
           )}
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }

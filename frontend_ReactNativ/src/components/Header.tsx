@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
@@ -23,6 +24,7 @@ export function Header({ navigation }: Props) {
   const [showSettings, setShowSettings] = useState(false);
   const langButtonRef = useRef<View>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const insets = useSafeAreaInsets();
 
   const handleLogout = async () => {
     await auth.logout();
@@ -35,7 +37,7 @@ export function Header({ navigation }: Props) {
       backgroundColor: colors.headerBg,
       paddingHorizontal: 16,
       paddingVertical: 12,
-      paddingTop: 48,
+      paddingTop: insets.top + 12,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
