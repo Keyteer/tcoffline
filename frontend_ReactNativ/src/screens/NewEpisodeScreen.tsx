@@ -19,10 +19,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
 import { OfflineBanner } from '../components/OfflineBanner';
+import { MicButton } from '../components/MicButton';
+import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { api } from '../lib/api';
 import { offlineCache } from '../lib/offlineCache';
 import { mutationQueue } from '../lib/mutationQueue';
 import { formatRUT, getRUTError } from '../lib/rutValidation';
+import { parseSpokenDate, cleanSpokenRut, parseSpokenName } from '../lib/speechParsers';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -234,6 +237,8 @@ export function NewEpisodeScreen({ navigation }: Props) {
     },
     inputDisabled: { backgroundColor: colors.surfaceSecondary, opacity: 0.6 },
     inputError: { borderColor: colors.error },
+    inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+    inputRowField: { flex: 1, marginBottom: 0 },
     errorSmall: { color: colors.error, fontSize: 12, marginTop: -8, marginBottom: 8 },
     row: { flexDirection: 'row', gap: 12 },
     half: { flex: 1 },
@@ -353,7 +358,11 @@ export function NewEpisodeScreen({ navigation }: Props) {
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Header navigation={navigation} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          onTouchStart={() => stopActiveSpeechRecognition()}
+        >
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backText}>← {t.newEpisode.backToEpisodes}</Text>
           </TouchableOpacity>
@@ -370,13 +379,19 @@ export function NewEpisodeScreen({ navigation }: Props) {
                 <Text style={styles.label}>
                   {t.newEpisode.firstName} <Text style={styles.required}>*</Text>
                 </Text>
-                <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholderTextColor={colors.textTertiary} />
+                <View style={styles.inputRow}>
+                  <TextInput style={[styles.input, styles.inputRowField]} value={firstName} onChangeText={setFirstName} placeholderTextColor={colors.textTertiary} />
+                  <MicButton value={firstName} mode="replace" onTranscript={(text) => setFirstName(parseSpokenName(text))} />
+                </View>
               </View>
               <View style={styles.half}>
                 <Text style={styles.label}>
                   {t.newEpisode.lastName} <Text style={styles.required}>*</Text>
                 </Text>
-                <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholderTextColor={colors.textTertiary} />
+                <View style={styles.inputRow}>
+                  <TextInput style={[styles.input, styles.inputRowField]} value={lastName} onChangeText={setLastName} placeholderTextColor={colors.textTertiary} />
+                  <MicButton value={lastName} mode="replace" onTranscript={(text) => setLastName(parseSpokenName(text))} />
+                </View>
               </View>
             </View>
 
@@ -392,14 +407,22 @@ export function NewEpisodeScreen({ navigation }: Props) {
               />
               <Text style={styles.switchLabel}>{t.newEpisode.noDocument}</Text>
             </View>
-            <TextInput
-              style={[styles.input, noDocument && styles.inputDisabled, rutError ? styles.inputError : null]}
-              value={rut}
-              onChangeText={handleRutChange}
-              placeholder="12345678-9"
-              placeholderTextColor={colors.textTertiary}
-              editable={!noDocument}
-            />
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.input, styles.inputRowField, noDocument && styles.inputDisabled, rutError ? styles.inputError : null]}
+                value={rut}
+                onChangeText={handleRutChange}
+                placeholder="12345678-9"
+                placeholderTextColor={colors.textTertiary}
+                editable={!noDocument}
+              />
+              <MicButton
+                value={rut}
+                mode="replace"
+                disabled={noDocument}
+                onTranscript={(text) => handleRutChange(cleanSpokenRut(text))}
+              />
+            </View>
             {rutError && !noDocument ? <Text style={styles.errorSmall}>{rutError}</Text> : null}
 
             <View style={styles.row}>
@@ -418,13 +441,20 @@ export function NewEpisodeScreen({ navigation }: Props) {
                 <Text style={styles.label}>
                   {t.newEpisode.birthDate} <Text style={styles.required}>*</Text>
                 </Text>
-                <TextInput
-                  style={styles.input}
-                  value={birthDate}
-                  onChangeText={setBirthDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.textTertiary}
-                />
+                <View style={styles.inputRow}>
+                  <TextInput
+                    style={[styles.input, styles.inputRowField]}
+                    value={birthDate}
+                    onChangeText={setBirthDate}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.textTertiary}
+                  />
+                  <MicButton
+                    value={birthDate}
+                    mode="replace"
+                    onTranscript={(text) => setBirthDate(parseSpokenDate(text))}
+                  />
+                </View>
               </View>
             </View>
 
@@ -446,13 +476,16 @@ export function NewEpisodeScreen({ navigation }: Props) {
             </TouchableOpacity>
 
             <Text style={styles.label}>{t.newEpisode.roomBox}</Text>
-            <TextInput
-              style={styles.input}
-              value={locationRoomBox}
-              onChangeText={setLocationRoomBox}
-              placeholder="Ej: Box 3, Habitación 201"
-              placeholderTextColor={colors.textTertiary}
-            />
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.input, styles.inputRowField]}
+                value={locationRoomBox}
+                onChangeText={setLocationRoomBox}
+                placeholder="Ej: Box 3, Habitación 201"
+                placeholderTextColor={colors.textTertiary}
+              />
+              <MicButton value={locationRoomBox} mode="replace" onTranscript={(text) => setLocationRoomBox(text)} />
+            </View>
 
             <Text style={styles.label}>{t.newEpisode.clinicUnit}</Text>
             <TouchableOpacity
@@ -473,15 +506,24 @@ export function NewEpisodeScreen({ navigation }: Props) {
             </TouchableOpacity>
 
             <Text style={styles.label}>{t.newEpisode.consultReason}</Text>
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              value={motivoConsulta}
-              onChangeText={setMotivoConsulta}
-              placeholder="Describa brevemente el motivo de la consulta..."
-              placeholderTextColor={colors.textTertiary}
-              multiline
-              numberOfLines={3}
-            />
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.input, styles.inputRowField, styles.textarea]}
+                value={motivoConsulta}
+                onChangeText={setMotivoConsulta}
+                placeholder="Describa brevemente el motivo de la consulta..."
+                placeholderTextColor={colors.textTertiary}
+                multiline
+                numberOfLines={3}
+              />
+              <MicButton
+                value={motivoConsulta}
+                mode="append"
+                continuous
+                interim
+                onTranscript={(text) => setMotivoConsulta(text)}
+              />
+            </View>
 
             {error ? (
               <View style={styles.errorBox}>

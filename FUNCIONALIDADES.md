@@ -147,6 +147,17 @@ La documentación completa de todos los endpoints HTTP — contratos, parámetro
 - **Idiomas soportados:** Español (es), Inglés (en)
 - **Implementación:** Backend (`app/config/`) y frontend React Native (`frontend_ReactNativ/src/config/`)
 
+### Dictado por voz (Speech-to-Text)
+- **Descripción:** Botón de micrófono 🎤 junto a campos de texto en *Nuevo Episodio* y *Nota Clínica* para dictar el contenido en lugar de escribirlo.
+- **Plataformas:** Android, iOS y Web (Chromium) — implementado con `expo-speech-recognition` (envuelve `SFSpeechRecognizer`, `SpeechRecognizer` y `SpeechRecognition` web).
+- **Idioma:** sigue el idioma de la app (`es-CL` o `en-US`).
+- **Campos soportados:**
+  - Nuevo Episodio: nombre, apellidos, RUT (limpia "guión" → `-` y aplica `formatRUT`), fecha de nacimiento (parser de fechas habladas en español/inglés → ISO), habitación/box, motivo de consulta (modo continuo con resultados parciales).
+  - Nota Clínica: textarea principal en modo continuo con vista previa del transcrito parcial debajo del campo.
+- **Privacidad:** el audio no se envía al backend; la transcripción ocurre on-device en móvil y en el motor del navegador en web.
+- **Permisos:** primer uso solicita micrófono (y reconocimiento de voz en iOS).
+- **Limitaciones:** Web requiere `https://` o `localhost`; Firefox y Brave muestran el botón deshabilitado por falta de soporte de la API.
+
 ### Seguridad
 - **Autenticación:** JWT con refresh tokens (Bearer token), fallback Basic Auth
 - **Autorización:** Rutas protegidas, verificación de roles (admin/user)

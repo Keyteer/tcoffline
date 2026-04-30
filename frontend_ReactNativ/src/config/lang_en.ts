@@ -299,4 +299,13 @@ export const lang_en: TranslationKeys = {
     continueOffline: 'Continue without connection (offline mode)',
     resumeLastConnection: 'Resume last connection (offline mode)',
   },
+
+  speech: {
+    start: 'Dictate',
+    stop: 'Stop dictation',
+    listening: 'Listening...',
+    permissionDenied: 'Microphone permission denied',
+    unsupported: 'Dictation not available on this device or browser',
+    errorGeneric: 'Speech recognition error',
+  },
 };

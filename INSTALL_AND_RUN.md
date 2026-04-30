@@ -124,6 +124,19 @@ npm start
 npm run android
 ```
 
+### Dictado por voz (Speech-to-Text)
+
+La app incluye un botón de micrófono 🎤 junto a campos de texto en *Nuevo Episodio* y *Nota Clínica*. Usa reconocimiento de voz nativo en Android/iOS y la Web Speech API en navegadores.
+
+- **Android / iOS**: requiere development build (no funciona en Expo Go). Tras instalar dependencias ejecutar:
+  ```bash
+  npx expo prebuild --clean
+  npm run android   # o npm run ios
+  ```
+  En primer uso pedirá permiso de micrófono (y reconocimiento de voz en iOS).
+- **Web**: solo funciona en navegadores Chromium (Chrome, Edge) y requiere `https://` o `localhost`. Firefox/Brave mostrarán el botón deshabilitado.
+- **Privacidad**: el audio no se envía al backend; la transcripción ocurre en el dispositivo o en el motor del navegador.
+
 ### Build de producción (EAS)
 
 ```bash

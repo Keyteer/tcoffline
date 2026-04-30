@@ -1,3 +1,4 @@
+import './src/lib/intlPolyfill';
 import { registerRootComponent } from 'expo';
 
 import App from './App';

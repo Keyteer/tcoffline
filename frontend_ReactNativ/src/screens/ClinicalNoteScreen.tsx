@@ -18,6 +18,8 @@ import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
 import { PatientHistoryModal } from '../components/PatientHistoryModal';
 import { OfflineBanner } from '../components/OfflineBanner';
+import { MicButton } from '../components/MicButton';
+import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { api } from '../lib/api';
 import { mutationQueue } from '../lib/mutationQueue';
 import type { EpisodeDetail, ClinicalNote } from '../types';
@@ -39,6 +41,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   const [episode, setEpisode] = useState<EpisodeDetail | null>(null);
   const [notes, setNotes] = useState<ClinicalNote[]>([]);
   const [noteText, setNoteText] = useState('');
+  const [interimNote, setInterimNote] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
@@ -238,6 +241,15 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
       fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     },
     textareaDisabled: { backgroundColor: colors.surfaceSecondary, opacity: 0.6 },
+    textareaWrapper: { position: 'relative' },
+    textareaMic: { position: 'absolute', top: 8, right: 8 },
+    interimPreview: {
+      fontSize: 12,
+      fontStyle: 'italic',
+      color: colors.textTertiary,
+      marginTop: 4,
+      marginBottom: 4,
+    },
     charCount: { fontSize: 12, color: colors.textTertiary, marginTop: 6, marginBottom: 12 },
     errorBox: {
       backgroundColor: colors.errorLight,
@@ -319,7 +331,11 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Header navigation={navigation} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          onTouchStart={() => stopActiveSpeechRecognition()}
+        >
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Episodes')}>
             <Text style={styles.backText}>← {t.clinicalNote.backToEpisodes}</Text>
           </TouchableOpacity>
@@ -433,15 +449,32 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
           {/* New Note Form */}
           <View style={styles.formCard}>
             <Text style={styles.formLabel}>{t.clinicalNote.newNote}</Text>
-            <TextInput
-              style={[styles.textarea, isReadOnlyMode && styles.textareaDisabled]}
-              value={noteText}
-              onChangeText={setNoteText}
-              placeholder={isReadOnlyMode ? t.readOnlyMode.textareaPlaceholder : t.clinicalNote.notePlaceholder}
-              placeholderTextColor={colors.textTertiary}
-              multiline
-              editable={!isReadOnlyMode}
-            />
+            <View style={styles.textareaWrapper}>
+              <TextInput
+                style={[styles.textarea, isReadOnlyMode && styles.textareaDisabled]}
+                value={noteText}
+                onChangeText={setNoteText}
+                placeholder={isReadOnlyMode ? t.readOnlyMode.textareaPlaceholder : t.clinicalNote.notePlaceholder}
+                placeholderTextColor={colors.textTertiary}
+                multiline
+                editable={!isReadOnlyMode}
+              />
+              {!isReadOnlyMode ? (
+                <View style={styles.textareaMic}>
+                  <MicButton
+                    value={noteText}
+                    mode="append"
+                    continuous
+                    interim
+                    onTranscript={(text) => setNoteText(text)}
+                    onInterim={setInterimNote}
+                  />
+                </View>
+              ) : null}
+            </View>
+            {interimNote ? (
+              <Text style={styles.interimPreview}>{interimNote}</Text>
+            ) : null}
             <Text style={styles.charCount}>{noteText.length} {t.clinicalNote.characters}</Text>
 
             {error ? (

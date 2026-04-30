@@ -296,6 +296,15 @@ export const lang_es = {
     continueOffline: 'Continuar sin conexión (modo offline)',
     resumeLastConnection: 'Retomar última conexión (modo offline)',
   },
+
+  speech: {
+    start: 'Dictar',
+    stop: 'Detener dictado',
+    listening: 'Escuchando...',
+    permissionDenied: 'Permiso de micrófono denegado',
+    unsupported: 'Dictado no disponible en este dispositivo o navegador',
+    errorGeneric: 'Error en el reconocimiento de voz',
+  },
 };
 
 export type TranslationKeys = typeof lang_es;
