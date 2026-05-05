@@ -2,14 +2,13 @@
 
 Sistema offline para gestión de episodios clínicos con sincronización bidireccional con servidor central.
 
-## Características
+## Funcionalidad
 
 - Gestión offline de episodios clínicos con JSON completo del paciente
 - Sincronización bidireccional automática con servidor central vía HL7 v2.5
 - Frontend móvil React Native (Android, iOS, Web) con modo oscuro
 - Backend containerizado (Docker + PostgreSQL)
 - Autenticación JWT con refresh tokens
-- Descubrimiento de servidor vía mDNS y código QR
 - Soporte multiidioma (Español / English)
 
 ## Arquitectura
@@ -38,18 +37,15 @@ project/
 ├── tests/                       # Suite pytest (backend)
 ├── requests/                    # Archivos .http para pruebas manuales
 ├── Dockerfile
-├── docker-compose.yml           # Perfiles: prod (default) / dev / test
+├── docker-compose.yml           # Perfiles: dev / test
 └── entrypoint.sh
 ```
 
 ## Inicio Rápido
 
 ```bash
-# Levantar backend + DB (modo producción, logs silenciosos)
-docker compose up -d
-
-# Levantar en modo desarrollo (logs verbose, debug)
-docker compose --profile dev up backend-dev
+# Levantar backend + DB
+docker compose up
 
 # API:           http://localhost:8000
 # Docs:          http://localhost:8000/docs

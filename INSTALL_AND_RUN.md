@@ -124,30 +124,76 @@ npm start
 npm run android
 ```
 
-### Dictado por voz (Speech-to-Text)
+### Build de producción (APK local, sin EAS)
 
-La app incluye un botón de micrófono 🎤 junto a campos de texto en *Nuevo Episodio* y *Nota Clínica*. Usa reconocimiento de voz nativo en Android/iOS y la Web Speech API en navegadores.
+La configuración nativa necesaria (cleartext HTTP) está expresada como plugin en [frontend_ReactNativ/app.json](frontend_ReactNativ/app.json) y se aplica automáticamente durante `expo prebuild`.
 
-- **Android / iOS**: requiere development build (no funciona en Expo Go). Tras instalar dependencias ejecutar:
-  ```bash
-  npx expo prebuild --clean
-  npm run android   # o npm run ios
-  ```
-  En primer uso pedirá permiso de micrófono (y reconocimiento de voz en iOS).
-- **Web**: solo funciona en navegadores Chromium (Chrome, Edge) y requiere `https://` o `localhost`. Firefox/Brave mostrarán el botón deshabilitado.
-- **Privacidad**: el audio no se envía al backend; la transcripción ocurre en el dispositivo o en el motor del navegador.
+> **Solo Windows**: antes de compilar es necesario crear un junction para evitar el límite de 260 caracteres de CMake. Ver [QUICK_FIXES — Límite de rutas en Windows](./QUICK_FIXES.md#límite-de-rutas-en-windows-build-apk).
 
-### Build de producción (EAS)
+#### 1. Preparar
 
 ```bash
-npm install -g eas-cli
-eas login
-eas build:configure                            # una vez, genera eas.json
-eas build --platform android --profile production
-eas build --platform ios --profile production
+cd frontend_ReactNativ
+npm install
+npx expo prebuild --platform android   # genera android/ con los plugins aplicados
 ```
 
-Builds locales sin EAS Cloud: [Expo local builds](https://docs.expo.dev/build-reference/local-builds/)
+#### 2. Compilar
+
+Desde /android/:
+
+```powershell
+# Windows:
+.\/gradlew assembleRelease
+```
+
+```bash
+# Linux/macOS:
+./gradlew assembleRelease
+```
+
+El APK queda en `frontend_ReactNativ/android/app/build/outputs/apk/release/app-release.apk`.
+Por defecto se firma con el **keystore de debug** (adecuado para pruebas internas y sideloading).
+
+#### 3. Firma con keystore de producción **(Opcional)**
+
+Necesario solo si vas a distribuir actualizaciones a usuarios que ya tienen la app instalada, o publicar en Play Store. Con el keystore de debug cada máquina genera una clave distinta, lo que impide instalar actualizaciones sobre versiones anteriores.
+
+>  Solicita el archivo `production-key.jks` y la contraseña a los desarrolladores responsables del proyecto.
+
+1. **Copiar el keystore** recibido a `frontend_ReactNativ/android/app/production-key.jks`.
+
+2. **Editar `android/app/build.gradle`** — añadir dentro de `signingConfigs` y apuntar `release` buildType a él:
+
+   ```gradle
+   signingConfigs {
+       debug { ... }   // existente, no tocar
+       release {
+           storeFile file("production-key.jks")
+           storePassword "<password>"
+           keyAlias "TcOfflineKey"
+           keyPassword "<password>"
+       }
+   }
+   buildTypes {
+       release {
+           signingConfig signingConfigs.release
+           // resto de opciones existentes...
+       }
+   }
+   ```
+
+3. Compilar con `assembleRelease` igual que antes.
+
+> Se recomienda guardar una copia de `production-key.jks` fuera de /android/. Tras un `npx expo prebuild --clean` hay que repetir el paso 2 y volver a copiar el `.jks` a `android/app/`.
+
+#### 4. Instalar en dispositivo
+
+```powershell
+adb install -r "frontend_ReactNativ\android\app\build\outputs\apk\release\app-release.apk"
+```
+
+Alternativamente copiar el APK al dispositivo e instalar manualmente.
 
 ---
 

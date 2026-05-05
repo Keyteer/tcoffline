@@ -162,3 +162,4 @@ La documentación completa de todos los endpoints HTTP — contratos, parámetro
 - **Autenticación:** JWT con refresh tokens (Bearer token), fallback Basic Auth
 - **Autorización:** Rutas protegidas, verificación de roles (admin/user)
 - **Validación:** Pydantic schemas en backend, prevención de inyección SQL via SQLAlchemy ORM
+- !! **HTTP:** Actualmente la comunicación entre back y frontend es por texto claro, habilitado en app.json con `expo-build-properties`.

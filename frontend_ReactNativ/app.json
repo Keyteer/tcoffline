@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "TCOffline",
-    "slug": "TCOffline",
+    "name": "TcOffline",
+    "slug": "TcOffline",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,7 +22,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.TCOffline"
+      "package": "com.anonymous.TcOffline"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,7 +34,17 @@
         {
           "microphonePermission": "Permite a $(PRODUCT_NAME) usar el micrófono para dictado por voz.",
           "speechRecognitionPermission": "Permite a $(PRODUCT_NAME) reconocer voz para dictar texto en formularios clínicos.",
-          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
       ]
     ]

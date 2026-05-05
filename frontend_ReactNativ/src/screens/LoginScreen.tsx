@@ -344,17 +344,6 @@ export function LoginScreen({ navigation }: Props) {
             <Text style={styles.secondaryButtonText}>{t.serverDiscovery.changeServer}</Text>
           </TouchableOpacity>
 
-          <View style={styles.demoBox}>
-            <Text style={styles.demoTitle}>
-              {language === 'es' ? 'Credenciales de prueba:' : 'Test credentials:'}
-            </Text>
-            <Text style={styles.demoText}>
-              {language === 'es' ? 'Usuario' : 'User'}: <Text style={styles.demoBold}>admin</Text>
-            </Text>
-            <Text style={styles.demoText}>
-              {language === 'es' ? 'Contraseña' : 'Password'}: <Text style={styles.demoBold}>admin</Text>
-            </Text>
-          </View>
         </View>
       </ScrollView>
 
