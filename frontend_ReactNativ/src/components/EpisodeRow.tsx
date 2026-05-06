@@ -41,6 +41,7 @@ export function EpisodeRow({ episode, onPress }: Props) {
   };
 
   const hasUnsynedNotes = episode.pending_notes_count > 0;
+  const isLocal = !!episode.local;
 
   const styles = StyleSheet.create({
     card: {
@@ -70,9 +71,11 @@ export function EpisodeRow({ episode, onPress }: Props) {
     },
     syncedBg: { backgroundColor: colors.successLight },
     pendingBg: { backgroundColor: colors.warningLight },
+    localBg: { backgroundColor: colors.errorLight },
     syncText: { fontSize: 11, fontWeight: '600', marginLeft: 4 },
     syncedText: { color: colors.success },
     pendingText: { color: colors.warning },
+    localText: { color: colors.error },
     middleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 6 },
     detail: { fontSize: 12, color: colors.textSecondary },
     detailLabel: { fontWeight: '600' },
@@ -93,19 +96,27 @@ export function EpisodeRow({ episode, onPress }: Props) {
           <Text style={styles.patientName} numberOfLines={1}>
             {truncateName(episode.paciente || '-')}
           </Text>
-          {!episode.synced_flag && (
+          {!episode.synced_flag && !isLocal && (
             <View style={styles.newBadge}>
               <Text style={styles.newBadgeText}>{t.episodes.syncStatus.new}</Text>
             </View>
           )}
         </View>
-        <View style={[styles.syncBadge, episode.synced_flag && !hasUnsynedNotes ? styles.syncedBg : styles.pendingBg]}>
-          <Text style={[styles.syncText, episode.synced_flag && !hasUnsynedNotes ? styles.syncedText : styles.pendingText]}>
-            {episode.synced_flag && !hasUnsynedNotes
-              ? `✓ ${t.episodes.syncStatus.synced}`
-              : `⏱ ${t.episodes.syncStatus.pendingCount}${hasUnsynedNotes ? ` (${episode.pending_notes_count})` : ''}`}
-          </Text>
-        </View>
+        {isLocal ? (
+          <View style={[styles.syncBadge, styles.localBg]}>
+            <Text style={[styles.syncText, styles.localText]}>
+              {`⊘ ${t.episodes.syncStatus.local}`}
+            </Text>
+          </View>
+        ) : (
+          <View style={[styles.syncBadge, episode.synced_flag && !hasUnsynedNotes ? styles.syncedBg : styles.pendingBg]}>
+            <Text style={[styles.syncText, episode.synced_flag && !hasUnsynedNotes ? styles.syncedText : styles.pendingText]}>
+              {episode.synced_flag && !hasUnsynedNotes
+                ? `✓ ${t.episodes.syncStatus.synced}`
+                : `⏱ ${t.episodes.syncStatus.pendingCount}${hasUnsynedNotes ? ` (${episode.pending_notes_count})` : ''}`}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.middleRow}>

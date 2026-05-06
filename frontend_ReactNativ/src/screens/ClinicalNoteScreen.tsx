@@ -22,7 +22,8 @@ import { MicButton } from '../components/MicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { api } from '../lib/api';
 import { mutationQueue } from '../lib/mutationQueue';
-import type { EpisodeDetail, ClinicalNote } from '../types';
+import type { PendingMutation } from '../lib/mutationQueue';
+import type { EpisodeDetail, ClinicalNote, EpisodeCreateRequest, ClinicalNoteCreateRequest } from '../types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/types';
@@ -34,12 +35,14 @@ type Props = {
 
 export function ClinicalNoteScreen({ navigation, route }: Props) {
   const { id } = route.params;
+  const isLocalEpisode = id < 0;
   const { isReadOnlyMode } = useUser();
   const { t, language } = useLanguage();
   const { colors } = useTheme();
-  const { isBackendReachable } = useConnectivity();
+  const { isBackendReachable, lastReplayAt } = useConnectivity();
   const [episode, setEpisode] = useState<EpisodeDetail | null>(null);
   const [notes, setNotes] = useState<ClinicalNote[]>([]);
+  const [pendingLocalNotes, setPendingLocalNotes] = useState<ClinicalNote[]>([]);
   const [noteText, setNoteText] = useState('');
   const [interimNote, setInterimNote] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -48,31 +51,118 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showHistory, setShowHistory] = useState(false);
 
-  const loadNotes = async () => {
+  // Build a synthetic EpisodeDetail from a queued createEpisode mutation so
+  // the user can keep working with episodes that have not yet been synced.
+  const buildLocalEpisodeDetail = (m: PendingMutation): EpisodeDetail => {
+    const p = m.payload as EpisodeCreateRequest;
+    return {
+      id,
+      mrn: p.mrn,
+      num_episodio: p.num_episodio,
+      run: p.run,
+      paciente: p.paciente,
+      fecha_nacimiento: p.fecha_nacimiento,
+      sexo: p.sexo,
+      tipo: p.tipo,
+      fecha_atencion: p.fecha_atencion,
+      hospital: p.hospital,
+      habitacion: p.habitacion,
+      cama: p.cama,
+      ubicacion: p.ubicacion,
+      estado: p.estado,
+      profesional: p.profesional,
+      motivo_consulta: p.motivo_consulta,
+      data_json: '',
+      created_at: new Date(m.timestamp).toISOString(),
+      updated_at: new Date(m.timestamp).toISOString(),
+      synced_flag: false,
+      pending_notes_count: 0,
+      local: true,
+      local_mutation_id: m.id,
+      data: (p.data_json as unknown) as EpisodeDetail['data'],
+    };
+  };
+
+  // Convert queued createNote mutations into ClinicalNote-shaped objects so
+  // they can be rendered inline with synced notes.
+  const queueToNotes = (mutations: PendingMutation[]): ClinicalNote[] =>
+    mutations.map((m) => ({
+      // Negative id avoids collisions with real notes from the backend.
+      id: -m.timestamp,
+      episode_id: id,
+      author_user_id: 0,
+      author_username: '—',
+      note_text: (m.payload as ClinicalNoteCreateRequest).note_text,
+      created_at: new Date(m.timestamp).toISOString(),
+      synced_flag: false,
+    }));
+
+  const loadPendingLocalNotes = async (episodeKey?: string) => {
     try {
-      const notesData = await api.getClinicalNotes(id);
+      const pending = await mutationQueue.getPendingNotesForEpisode(id, episodeKey);
+      setPendingLocalNotes(queueToNotes(pending));
+    } catch {
+      setPendingLocalNotes([]);
+    }
+  };
+
+  const loadNotes = async () => {
+    if (isLocalEpisode) {
+      // No backend record yet — only queued notes are available.
+      const localKey = episode?.num_episodio;
+      await loadPendingLocalNotes(localKey);
+      return;
+    }
+    try {
+      const notesData = await api.getClinicalNotes(id, (fresh) => setNotes(fresh));
       setNotes(notesData);
     } catch {
       // ignore
     }
+    await loadPendingLocalNotes();
   };
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const hasPendingNotes = notes.some((note) => !note.synced_flag);
+      const hasPendingNotes = notes.some((note) => !note.synced_flag) || pendingLocalNotes.length > 0;
       if (hasPendingNotes) {
         await loadNotes();
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [notes]);
+  }, [notes, pendingLocalNotes, isLocalEpisode, episode?.num_episodio]);
+
+  // Refresh immediately when connectivity is restored / queue drains, so
+  // notes that were queued while offline appear without a manual pull.
+  useEffect(() => {
+    if (lastReplayAt === 0) return;
+    loadNotes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastReplayAt]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        if (isLocalEpisode) {
+          const local = await mutationQueue.findLocalEpisode(id);
+          if (!local) {
+            setError(t.clinicalNote.loadError);
+            return;
+          }
+          const synthetic = buildLocalEpisodeDetail(local);
+          setEpisode(synthetic);
+          await loadPendingLocalNotes(synthetic.num_episodio);
+          return;
+        }
+
         const [episodeData, notesData] = await Promise.all([
-          api.getEpisode(id),
-          api.getClinicalNotes(id),
+          api.getEpisode(id, (fresh) => {
+            if (!fresh.paciente && fresh.data?.Paciente) fresh.paciente = fresh.data.Paciente;
+            if (!fresh.paciente && fresh.data?.Nombre) fresh.paciente = fresh.data.Nombre;
+            if (!fresh.profesional && fresh.data?.Profesional) fresh.profesional = fresh.data.Profesional;
+            setEpisode(fresh);
+          }),
+          api.getClinicalNotes(id, (fresh) => setNotes(fresh)).catch(() => [] as ClinicalNote[]),
         ]);
 
         if (!episodeData.paciente && episodeData.data?.Paciente) {
@@ -87,6 +177,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
 
         setEpisode(episodeData);
         setNotes(notesData);
+        await loadPendingLocalNotes();
       } catch {
         setError(t.clinicalNote.loadError);
       } finally {
@@ -102,7 +193,19 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     setError('');
 
     try {
-      if (!isBackendReachable) {
+      // Notes on a still-local episode MUST be queued (no real id yet).
+      // Otherwise, queue when offline and post directly when online.
+      if (isLocalEpisode) {
+        await mutationQueue.enqueue({
+          type: 'createNote',
+          payload: { note_text: noteText },
+          episodeId: id, // pseudo-id; replaced after parent createEpisode replays
+          localEpisodeKey: episode?.num_episodio,
+        });
+        setSuccessMessage(t.offline.queuedNote);
+        setNoteText('');
+        await loadPendingLocalNotes(episode?.num_episodio);
+      } else if (!isBackendReachable) {
         await mutationQueue.enqueue({
           type: 'createNote',
           payload: { note_text: noteText },
@@ -110,6 +213,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
         });
         setSuccessMessage(t.offline.queuedNote);
         setNoteText('');
+        await loadPendingLocalNotes();
       } else {
         await api.createClinicalNote(id, { note_text: noteText });
         setSuccessMessage(t.clinicalNote.saveSuccess);
@@ -203,9 +307,11 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     noteBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, },
     noteBadgeSynced: { backgroundColor: colors.successLight },
     noteBadgePending: { backgroundColor: colors.warningLight },
+    noteBadgeLocal: { backgroundColor: colors.errorLight },
     noteBadgeText: { fontSize: 11, fontWeight: '600' },
     noteBadgeTextSynced: { color: colors.success },
     noteBadgeTextPending: { color: colors.warning },
+    noteBadgeTextLocal: { color: colors.error },
     noteText: { fontSize: 14, color: colors.text, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
     noteAuthorName: { fontSize: 13, color: colors.textSecondary, marginTop: 8 },
     // Read only banner
@@ -234,6 +340,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
       borderColor: colors.inputBorder,
       borderRadius: 8,
       padding: 12,
+      paddingRight: 52,
       fontSize: 14,
       color: colors.text,
       minHeight: 200,
@@ -413,19 +520,39 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
           </View>
 
           {/* Previous Notes */}
-          {notes.length > 0 && (
+          {(notes.length > 0 || pendingLocalNotes.length > 0) && (
             <View style={styles.notesSection}>
               <Text style={styles.notesTitle}>{t.clinicalNote.previousNotes}</Text>
-              {notes.map((note) => (
+              {[...notes, ...pendingLocalNotes].map((note) => {
+                // Notes that exist only in the offline mutation queue use a
+                // negative pseudo-id; show them as "Local" (red) to make it
+                // clear they have not yet reached the backend at all.
+                const isLocalNote = note.id < 0;
+                const badgeStyle = isLocalNote
+                  ? styles.noteBadgeLocal
+                  : note.synced_flag
+                    ? styles.noteBadgeSynced
+                    : styles.noteBadgePending;
+                const badgeTextStyle = isLocalNote
+                  ? styles.noteBadgeTextLocal
+                  : note.synced_flag
+                    ? styles.noteBadgeTextSynced
+                    : styles.noteBadgeTextPending;
+                const badgeLabel = isLocalNote
+                  ? `⊘ ${t.episodes.syncStatus.local}`
+                  : note.synced_flag
+                    ? t.clinicalNote.sent
+                    : t.clinicalNote.pending;
+                return (
                 <View key={note.id} style={styles.noteItem}>
                   <View style={styles.noteHeader}>
                     <Text style={styles.noteAuthor}>{note.author_username}</Text>
                     <Text style={styles.noteDot}>•</Text>
                     <Text style={styles.noteDate}>{formatDateTime(note.created_at)}</Text>
                     <Text style={styles.noteDot}>•</Text>
-                    <View style={[styles.noteBadge, note.synced_flag ? styles.noteBadgeSynced : styles.noteBadgePending]}>
-                      <Text style={[styles.noteBadgeText, note.synced_flag ? styles.noteBadgeTextSynced : styles.noteBadgeTextPending]}>
-                        {note.synced_flag ? t.clinicalNote.sent : t.clinicalNote.pending}
+                    <View style={[styles.noteBadge, badgeStyle]}>
+                      <Text style={[styles.noteBadgeText, badgeTextStyle]}>
+                        {badgeLabel}
                       </Text>
                     </View>
                   </View>
@@ -434,7 +561,8 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
                     <Text style={styles.noteAuthorName}>{note.author_nombre}</Text>
                   ) : null}
                 </View>
-              ))}
+                );
+              })}
             </View>
           )}
 

@@ -10,8 +10,13 @@ export interface PendingMutation {
   type: MutationType;
   timestamp: number;
   payload: EpisodeCreateRequest | ClinicalNoteCreateRequest;
-  /** For createNote, the episode ID to attach the note to */
+  /** For createNote, the episode ID to attach the note to. May be a negative
+   *  pseudo-id while the parent episode itself is still queued locally. */
   episodeId?: number;
+  /** For createNote attached to a still-local episode: the `num_episodio` of
+   *  the parent createEpisode mutation. After the parent createEpisode replays,
+   *  matching notes are re-targeted to the real backend episode id. */
+  localEpisodeKey?: string;
 }
 
 async function loadQueue(): Promise<PendingMutation[]> {
@@ -52,5 +57,52 @@ export const mutationQueue = {
   async count(): Promise<number> {
     const queue = await loadQueue();
     return queue.length;
+  },
+
+  /** Pseudo-id used by the UI for episodes that exist only in the queue.
+   *  Negative so it can never collide with a real backend id. */
+  localEpisodePseudoId(m: PendingMutation): number {
+    return -m.timestamp;
+  },
+
+  /** Look up a queued createEpisode by the pseudo-id used in the UI. */
+  async findLocalEpisode(pseudoId: number): Promise<PendingMutation | null> {
+    const queue = await loadQueue();
+    return (
+      queue.find(
+        (m) => m.type === 'createEpisode' && -m.timestamp === pseudoId,
+      ) ?? null
+    );
+  },
+
+  /** Notes queued against a particular episode (real id or local pseudo-id). */
+  async getPendingNotesForEpisode(
+    episodeId: number,
+    localEpisodeKey?: string,
+  ): Promise<PendingMutation[]> {
+    const queue = await loadQueue();
+    return queue.filter((m) => {
+      if (m.type !== 'createNote') return false;
+      if (m.episodeId === episodeId) return true;
+      if (localEpisodeKey && m.localEpisodeKey === localEpisodeKey) return true;
+      return false;
+    });
+  },
+
+  /** Re-target queued notes whose parent episode just got a real backend id. */
+  async retargetNotesForLocalEpisode(
+    localEpisodeKey: string,
+    realEpisodeId: number,
+  ): Promise<void> {
+    const queue = await loadQueue();
+    let changed = false;
+    for (const m of queue) {
+      if (m.type === 'createNote' && m.localEpisodeKey === localEpisodeKey) {
+        m.episodeId = realEpisodeId;
+        m.localEpisodeKey = undefined;
+        changed = true;
+      }
+    }
+    if (changed) await saveQueue(queue);
   },
 };

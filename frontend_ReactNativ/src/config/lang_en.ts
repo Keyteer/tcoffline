@@ -77,6 +77,7 @@ export const lang_en: TranslationKeys = {
       synced: 'Synced',
       pendingCount: 'Pending',
       new: 'New',
+      local: 'Local',
     },
   },
 

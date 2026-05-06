@@ -23,3 +23,11 @@ export const READ_ONLY_CHECK_INTERVAL =
 /** Timeout (ms) for backend connection test requests. */
 export const CONNECTION_TEST_TIMEOUT =
   Number(process.env.EXPO_PUBLIC_CONNECTION_TEST_TIMEOUT) || 5_000;
+
+/** Default timeout (ms) for authenticated API requests. */
+export const API_REQUEST_TIMEOUT =
+  Number(process.env.EXPO_PUBLIC_API_REQUEST_TIMEOUT) || 20_000;
+
+/** Timeout (ms) for lightweight health checks (used for connectivity polling). */
+export const HEALTH_CHECK_TIMEOUT =
+  Number(process.env.EXPO_PUBLIC_HEALTH_CHECK_TIMEOUT) || 8_000;

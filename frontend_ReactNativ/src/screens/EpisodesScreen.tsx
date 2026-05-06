@@ -12,12 +12,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
 import { EpisodeRow } from '../components/EpisodeRow';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { api } from '../lib/api';
+import { mutationQueue } from '../lib/mutationQueue';
 import { formatTimeAgo } from '../lib/timeAgo';
 import type { Episode, EpisodeType, SyncStats } from '../types';
+import type { EpisodeCreateRequest } from '../types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -31,6 +34,7 @@ export function EpisodesScreen({ navigation }: Props) {
   const { isReadOnlyMode } = useUser();
   const { t } = useLanguage();
   const { colors } = useTheme();
+  const { lastReplayAt } = useConnectivity();
   const [activeTab, setActiveTab] = useState<EpisodeType | null>(null);
   const [allEpisodes, setAllEpisodes] = useState<Episode[]>([]);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
@@ -40,9 +44,57 @@ export function EpisodesScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadAllEpisodes = useCallback(async () => {
-    try {
-      const episodesList = await api.getEpisodes({});
-      const sortedEpisodes = episodesList.sort((a, b) => {
+    // Build pseudo-Episode entries from the offline mutation queue so that
+    // episodes created while disconnected appear immediately in the list
+    // with a "Local" badge until they are synced.
+    const buildLocalEpisodes = async (): Promise<Episode[]> => {
+      try {
+        const pending = await mutationQueue.getAll();
+        return pending
+          .filter((m) => m.type === 'createEpisode')
+          .map((m) => {
+            const p = m.payload as EpisodeCreateRequest;
+            return {
+              // Stable negative pseudo-id derived from the mutation timestamp,
+              // so ClinicalNoteScreen can find the originating queue entry.
+              id: mutationQueue.localEpisodePseudoId(m),
+              mrn: p.mrn,
+              num_episodio: p.num_episodio,
+              run: p.run,
+              paciente: p.paciente,
+              fecha_nacimiento: p.fecha_nacimiento,
+              sexo: p.sexo,
+              tipo: p.tipo,
+              fecha_atencion: p.fecha_atencion,
+              hospital: p.hospital,
+              habitacion: p.habitacion,
+              cama: p.cama,
+              ubicacion: p.ubicacion,
+              estado: p.estado,
+              profesional: '',
+              motivo_consulta: p.motivo_consulta,
+              data_json: '',
+              created_at: new Date(m.timestamp).toISOString(),
+              updated_at: new Date(m.timestamp).toISOString(),
+              synced_flag: false,
+              pending_notes_count: 0,
+              local: true,
+              local_mutation_id: m.id,
+            } as Episode;
+          });
+      } catch {
+        return [];
+      }
+    };
+
+    const apply = async (list: Episode[]) => {
+      const locals = await buildLocalEpisodes();
+      // Avoid duplicating a local entry if the server already returned the
+      // synced version (matched by num_episodio).
+      const serverNums = new Set(list.map((e) => e.num_episodio));
+      const merged = [...locals.filter((l) => !serverNums.has(l.num_episodio)), ...list];
+
+      const sortedEpisodes = merged.sort((a, b) => {
         const timeA = a.fecha_atencion ? new Date(a.fecha_atencion).getTime() : 0;
         const timeB = b.fecha_atencion ? new Date(b.fecha_atencion).getTime() : 0;
         return timeB - timeA;
@@ -59,14 +111,20 @@ export function EpisodesScreen({ navigation }: Props) {
         if (current && !tabs.find((t) => t.id === current)) return tabs[0]?.id ?? null;
         return current;
       });
+    };
+
+    try {
+      const episodesList = await api.getEpisodes({}, (fresh) => { void apply(fresh); });
+      await apply(episodesList);
     } catch {
-      setAllEpisodes([]);
+      // Even on total failure, still render any local-only episodes.
+      await apply([]);
     }
   }, []);
 
   const loadSyncStats = useCallback(async () => {
     try {
-      const stats = await api.getSyncStats();
+      const stats = await api.getSyncStats((fresh) => setSyncStats(fresh));
       setSyncStats(stats);
     } catch {
       // ignore
@@ -85,6 +143,15 @@ export function EpisodesScreen({ navigation }: Props) {
     return () => clearInterval(interval);
   }, [loadAllEpisodes, loadSyncStats]);
 
+  // Refresh immediately after the offline mutation queue is drained, so
+  // episodes flip from "Local" to a real backend record without the user
+  // having to wait for the next polling tick or pull-to-refresh.
+  useEffect(() => {
+    if (lastReplayAt === 0) return;
+    loadAllEpisodes();
+    loadSyncStats();
+  }, [lastReplayAt, loadAllEpisodes, loadSyncStats]);
+
   useEffect(() => {
     if (activeTab) {
       setEpisodes(allEpisodes.filter((e) => e.tipo === activeTab));
@@ -100,6 +167,8 @@ export function EpisodesScreen({ navigation }: Props) {
   };
 
   const handleEpisodeClick = (episodeId: number) => {
+    // Local-only episodes use a negative pseudo-id; ClinicalNoteScreen knows
+    // how to load them from the offline mutation queue.
     navigation.navigate('ClinicalNote', { id: episodeId });
   };
 

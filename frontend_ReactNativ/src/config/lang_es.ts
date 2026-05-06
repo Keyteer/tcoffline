@@ -74,6 +74,7 @@ export const lang_es = {
       synced: 'Sincronizado',
       pendingCount: 'Pendiente',
       new: 'Nuevo',
+      local: 'Local',
     },
   },
 

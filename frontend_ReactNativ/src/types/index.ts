@@ -50,6 +50,10 @@ export interface Episode {
   updated_at: string;
   synced_flag: boolean;
   pending_notes_count: number;
+  /** Client-only: true when the episode exists only in the local mutation queue (not yet sent to backend). */
+  local?: boolean;
+  /** Client-only: id of the pending mutation that will create this episode on the backend. */
+  local_mutation_id?: string;
 }
 
 export interface EpisodeDetail extends Episode {
