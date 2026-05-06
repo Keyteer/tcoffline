@@ -9,7 +9,10 @@ import {
   Switch,
   ActivityIndicator,
   StyleSheet,
+  Pressable,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import { api } from '../lib/api';
 import { auth } from '../lib/auth';
 import { useTheme } from '../contexts/ThemeContext';
@@ -27,6 +30,8 @@ interface UserSettingsModalProps {
 export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLogout }: UserSettingsModalProps) {
   const { colors } = useTheme();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
   const [activeTab, setActiveTab] = useState<'settings' | 'users'>('settings');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -36,7 +41,6 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -347,8 +351,9 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={handleClose}>
-        <View style={styles.modal} onStartShouldSetResponder={() => true}>
+      <View style={[styles.overlay, { paddingBottom: keyboardHeight }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+        <View style={styles.modal}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{t.userSettings.title}</Text>
@@ -384,7 +389,12 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
             </View>
           )}
 
-          <ScrollView style={styles.content}>
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+          >
             {activeTab === 'settings' && (
               <>
                 <Text style={styles.label}>Usuario</Text>
@@ -615,7 +625,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
             )}
           </ScrollView>
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 }

@@ -1,9 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, View, Image } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { parseCommandTranscript, type CommandVocab } from '../lib/speechParsers';
+
+const micIcon = require('../../assets/Microfone.png');
 
 interface CommandMicButtonProps<F extends string> {
   /** Vocabulary mapping field id -> spoken aliases. */
@@ -94,12 +96,11 @@ export function CommandMicButton<F extends string>({
     await speech.start({ lang, continuous: true, interim: true, protectFromExternalStop: true });
   };
 
-  const bgColor = isListening
-    ? colors.error
+  const iconTint = isListening
+    ? colors.primaryDark
     : hasError
       ? colors.errorLight
       : colors.primary;
-  const fgColor = isListening || !hasError ? '#FFFFFF' : colors.error;
 
   const accessibilityLabel = isUnsupported
     ? t.speech.unsupported
@@ -112,18 +113,18 @@ export function CommandMicButton<F extends string>({
     button: {
       width: size,
       height: size,
-      borderRadius: size / 2,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: bgColor,
-      opacity: disabled || isUnsupported ? 0.5 : 1,
-      shadowColor: '#000',
-      shadowOpacity: 0.15,
-      shadowRadius: 4,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 3,
+      backgroundColor: colors.primaryLight,
+      borderRadius: size / 4,
+      opacity: disabled || isUnsupported ? 0.4 : isListening ? 0.75 : 1,
     },
-    icon: { fontSize: Math.round(size * 0.5), color: fgColor },
+    icon: {
+      width: size,
+      height: size,
+      tintColor: iconTint,
+      resizeMode: 'contain',
+    },
     pulseDot: {
       position: 'absolute',
       top: -2,
@@ -148,7 +149,7 @@ export function CommandMicButton<F extends string>({
         onPress={handlePress}
         disabled={disabled || isUnsupported}
       >
-        <Text style={styles.icon}>{Platform.OS === 'web' ? '🎙️' : '🎙️'}</Text>
+        <Image source={micIcon} style={styles.icon} />
         {isListening ? <View style={styles.pulseDot} /> : null}
       </TouchableOpacity>
     </View>

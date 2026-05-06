@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +16,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
 import { api } from '../lib/api';
 import { auth } from '../lib/auth';
+import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -33,6 +33,7 @@ export function LoginScreen({ navigation }: Props) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const keyboardHeight = useKeyboardHeight();
 
   const handleSubmit = async () => {
     if (!username || !password) return;
@@ -279,10 +280,6 @@ export function LoginScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
       <TouchableOpacity
         style={styles.infoButton}
         onPress={() => setSidebarOpen(true)}
@@ -290,7 +287,7 @@ export function LoginScreen({ navigation }: Props) {
         <Text style={styles.infoButtonText}>ℹ</Text>
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: keyboardHeight }]} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
           <Text style={styles.title}>{t.login.title}</Text>
           <Text style={styles.subtitle}>
@@ -396,7 +393,6 @@ export function LoginScreen({ navigation }: Props) {
           </View>
         </>
       )}
-    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

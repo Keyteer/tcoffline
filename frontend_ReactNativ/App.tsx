@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Keyboard, TextInput, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -125,6 +125,21 @@ export default function App() {
 
 function AppContent() {
   const { theme } = useTheme();
+
+  // Android: when the user dismisses the keyboard via the navigation bar's
+  // back/down button, the focused TextInput keeps its cursor visible. Blur it
+  // explicitly on every keyboard hide so the caret disappears with the keyboard.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = Keyboard.addListener('keyboardDidHide', () => {
+      const node = (TextInput.State as any).currentlyFocusedInput?.();
+      if (node) {
+        try { (TextInput.State as any).blurTextInput?.(node); } catch {}
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   return (
     <>
       <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />

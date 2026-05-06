@@ -20,6 +20,7 @@ import { PatientHistoryModal } from '../components/PatientHistoryModal';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { MicButton } from '../components/MicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import { api } from '../lib/api';
 import { mutationQueue } from '../lib/mutationQueue';
 import type { PendingMutation } from '../lib/mutationQueue';
@@ -39,7 +40,8 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   const { isReadOnlyMode } = useUser();
   const { t, language } = useLanguage();
   const { colors } = useTheme();
-  const { isBackendReachable, lastReplayAt } = useConnectivity();
+  const { isBackendReachable } = useConnectivity();
+  const keyboardHeight = useKeyboardHeight();
   const [episode, setEpisode] = useState<EpisodeDetail | null>(null);
   const [notes, setNotes] = useState<ClinicalNote[]>([]);
   const [pendingLocalNotes, setPendingLocalNotes] = useState<ClinicalNote[]>([]);
@@ -131,14 +133,6 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     }, 5000);
     return () => clearInterval(interval);
   }, [notes, pendingLocalNotes, isLocalEpisode, episode?.num_episodio]);
-
-  // Refresh immediately when connectivity is restored / queue drains, so
-  // notes that were queued while offline appear without a manual pull.
-  useEffect(() => {
-    if (lastReplayAt === 0) return;
-    loadNotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastReplayAt]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -437,9 +431,9 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Header navigation={navigation} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + keyboardHeight }]}
           keyboardShouldPersistTaps="handled"
           onTouchStart={() => stopActiveSpeechRecognition()}
         >

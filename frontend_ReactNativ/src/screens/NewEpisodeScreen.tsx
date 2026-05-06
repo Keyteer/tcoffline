@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
@@ -22,6 +23,7 @@ import { OfflineBanner } from '../components/OfflineBanner';
 import { MicButton } from '../components/MicButton';
 import { CommandMicButton } from '../components/CommandMicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import { api } from '../lib/api';
 import { offlineCache } from '../lib/offlineCache';
 import { mutationQueue } from '../lib/mutationQueue';
@@ -38,6 +40,8 @@ export function NewEpisodeScreen({ navigation }: Props) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const { isBackendReachable } = useConnectivity();
+  const keyboardHeight = useKeyboardHeight();
+  const insets = useSafeAreaInsets();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,7 +50,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
   const [rut, setRut] = useState('');
   const [rutError, setRutError] = useState<string | null>(null);
   const [noDocument, setNoDocument] = useState(false);
-  const [sex, setSex] = useState('M');
+  const [sex, setSex] = useState('U');
   const [birthDate, setBirthDate] = useState('');
   const [episodeType, setEpisodeType] = useState<string>('');
   const [availableEpisodeTypes, setAvailableEpisodeTypes] = useState<string[]>([]);
@@ -386,6 +390,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
       borderTopRightRadius: 16,
       maxHeight: '60%',
       padding: 16,
+      paddingBottom: 16 + insets.bottom,
     },
     modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 12 },
     modalItem: {
@@ -446,9 +451,9 @@ export function NewEpisodeScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Header navigation={navigation} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + keyboardHeight }]}
           keyboardShouldPersistTaps="handled"
           onTouchStart={() => stopActiveSpeechRecognition()}
         >
@@ -546,9 +551,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
                 </TouchableOpacity>
               </View>
               <View style={styles.half}>
-                <Text style={styles.label}>
-                  {t.newEpisode.birthDate} <Text style={styles.required}>*</Text>
-                </Text>
+                <Text style={styles.label}>{t.newEpisode.birthDate}</Text>
                 <View style={styles.inputRow}>
                   <TextInput
                     style={[styles.input, styles.inputRowField]}
@@ -595,7 +598,9 @@ export function NewEpisodeScreen({ navigation }: Props) {
               <MicButton value={locationRoomBox} mode="replace" onTranscript={(text) => setLocationRoomBox(text)} />
             </View>
 
-            <Text style={styles.label}>{t.newEpisode.clinicUnit}</Text>
+            <Text style={styles.label}>
+              {t.newEpisode.clinicUnit} <Text style={styles.required}>*</Text>
+            </Text>
             <TouchableOpacity
               style={[styles.pickerButton, (isLoadingLocations || availableLocations.length === 0) && styles.inputDisabled]}
               onPress={() => !isLoadingLocations && availableLocations.length > 0 && setShowLocationPicker(true)}

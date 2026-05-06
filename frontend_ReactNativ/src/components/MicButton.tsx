@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, View, Image } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+
+const micIcon = require('../../assets/Microfone.png');
 
 export type MicButtonMode = 'replace' | 'append';
 
@@ -35,7 +37,7 @@ export function MicButton({
   continuous = false,
   interim = true,
   disabled = false,
-  size = 36,
+  size = 32,
   onInterim,
 }: MicButtonProps) {
   const { colors } = useTheme();
@@ -78,12 +80,13 @@ export function MicButton({
     await speech.start({ lang, continuous, interim });
   };
 
-  const bgColor = isListening
-    ? colors.error
+  const iconTint = isListening
+    ? colors.primaryDark
     : hasError
       ? colors.errorLight
-      : colors.primaryLight;
-  const fgColor = isListening ? '#FFFFFF' : isUnsupported ? colors.textTertiary : colors.primary;
+      : isUnsupported
+        ? colors.textTertiary
+        : colors.primary;
 
   const accessibilityLabel = isUnsupported
     ? t.speech.unsupported
@@ -100,15 +103,19 @@ export function MicButton({
   const styles = StyleSheet.create({
     wrapper: { alignItems: 'center', justifyContent: 'center' },
     button: {
-      width: size,
+      width: size / 2,
       height: size,
-      borderRadius: size / 2,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: bgColor,
-      opacity: disabled || isUnsupported ? 0.5 : 1,
+      backgroundColor: 'transparent',
+      opacity: disabled || isUnsupported ? 0.4 : isListening ? 0.75 : 1,
     },
-    icon: { fontSize: Math.round(size * 0.55), color: fgColor },
+    icon: {
+      width: size,
+      height: size,
+      tintColor: iconTint,
+      resizeMode: 'contain',
+    },
     pulseDot: {
       position: 'absolute',
       top: -2,
@@ -133,7 +140,7 @@ export function MicButton({
         onPress={handlePress}
         disabled={disabled || isUnsupported}
       >
-        <Text style={styles.icon}>{Platform.OS === 'web' ? '🎤' : '🎤'}</Text>
+        <Image source={micIcon} style={styles.icon} />
         {isListening ? <View style={styles.pulseDot} /> : null}
       </TouchableOpacity>
     </View>
