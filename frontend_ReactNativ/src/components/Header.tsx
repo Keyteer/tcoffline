@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
+import { useConnectivity } from '../contexts/ConnectivityContext';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { auth } from '../lib/auth';
 import { UserSettingsModal } from './UserSettingsModal';
@@ -16,6 +17,12 @@ type Props = {
 
 export function Header({ navigation }: Props) {
   const { isOnline } = useConnectionStatus();
+  const { isBackendReachable } = useConnectivity();
+  // 3 estados: offline (sin servidor local) → local (servidor local OK pero
+  // central caído) → online (cadena completa). LOCAL usa la paleta warning,
+  // igual que los mensajes de "pendientes".
+  const connectionState: 'offline' | 'local' | 'online' =
+    !isBackendReachable ? 'offline' : !isOnline ? 'local' : 'online';
   const { user: currentUser, updateUser } = useUser();
   const storedUser = auth.getUser();
   const { theme, toggleTheme, colors } = useTheme();
@@ -66,10 +73,12 @@ export function Header({ navigation }: Props) {
     },
     badgeOnline: { backgroundColor: colors.badgeOnlineBg },
     badgeOffline: { backgroundColor: colors.badgeOfflineBg },
+    badgeLocal: { backgroundColor: colors.badgeLocalBg },
     badgeDot: { width: 6, height: 6, borderRadius: 3, marginRight: 4 },
     badgeText: { fontSize: 11, fontWeight: '700' },
     badgeOnlineText: { color: colors.badgeOnlineText },
     badgeOfflineText: { color: colors.badgeOfflineText },
+    badgeLocalText: { color: colors.badgeLocalText },
     langButton: {
       paddingHorizontal: 10,
       paddingVertical: 6,
@@ -114,10 +123,44 @@ export function Header({ navigation }: Props) {
         <View style={styles.topRow}>
           <Text style={styles.titleText}>TrakCare Offline</Text>
           <View style={[styles.left, styles.statusWrap]}>
-            <View style={[styles.badge, isOnline ? styles.badgeOnline : styles.badgeOffline]}>
-              <View style={[styles.badgeDot, { backgroundColor: isOnline ? '#22C55E' : '#EF4444' }]} />
-              <Text style={[styles.badgeText, isOnline ? styles.badgeOnlineText : styles.badgeOfflineText]}>
-                {isOnline ? 'ONLINE' : 'OFFLINE'}
+            <View
+              style={[
+                styles.badge,
+                connectionState === 'online'
+                  ? styles.badgeOnline
+                  : connectionState === 'local'
+                  ? styles.badgeLocal
+                  : styles.badgeOffline,
+              ]}
+            >
+              <View
+                style={[
+                  styles.badgeDot,
+                  {
+                    backgroundColor:
+                      connectionState === 'online'
+                        ? '#22C55E'
+                        : connectionState === 'local'
+                        ? colors.warning
+                        : '#EF4444',
+                  },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.badgeText,
+                  connectionState === 'online'
+                    ? styles.badgeOnlineText
+                    : connectionState === 'local'
+                    ? styles.badgeLocalText
+                    : styles.badgeOfflineText,
+                ]}
+              >
+                {connectionState === 'online'
+                  ? 'ONLINE'
+                  : connectionState === 'local'
+                  ? 'LOCAL'
+                  : 'OFFLINE'}
               </Text>
             </View>
           </View>

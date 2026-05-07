@@ -2,6 +2,25 @@
 
 ---
 
+## [2.0-beta17] - 2026-05-06
+
+### Agregado
+- **`SyncPipeline`** (`frontend_ReactNativ/src/components/SyncPipeline.tsx`): nuevo indicador en `EpisodesScreen` que visualiza la cadena completa **App → Servidor local → Servidor central** con dos enlaces independientes (cada uno OK/✕) y badges con el backlog en cada nodo (outbox del dispositivo a la izquierda, `pending_events` del servidor local a la derecha). Etiquetas "recibido / enviado hace X" debajo. Resuelve la ambigüedad del `syncBar` anterior, que mezclaba ambos enlaces en un único "Conectado/Desconectado".
+- **Badge del Header con 3 estados**: `OFFLINE` (rojo, sin servidor local) → `LOCAL` (amarillo, servidor local OK pero central caído, mismo color que mensajes de pendientes) → `ONLINE` (verde, cadena completa). Consume `useConnectivity().isBackendReachable` + `useConnectionStatus().isOnline`.
+- Nuevos tokens de tema `badgeLocalBg` / `badgeLocalText` (ambos modos) en `ThemeContext`.
+- Bloque i18n `syncPipeline` en `lang_es.ts` / `lang_en.ts` (`app`, `localServer`, `centralServer`, `linkOk`, `linkDown`, `pendingInOutbox`, `pendingEvents`, `lastReceived`, `lastSent`, `never`).
+
+### Eliminado
+- **`OfflineBanner` retirado**. El badge del Header (3 estados) cumple su rol de aviso ambiental en todas las pantallas, y `SyncPipeline` cubre el diagnóstico detallado en `EpisodesScreen`. Borrados:
+  - `frontend_ReactNativ/src/components/OfflineBanner.tsx`.
+  - Usos en `EpisodesScreen.tsx`, `ClinicalNoteScreen.tsx`, `NewEpisodeScreen.tsx`.
+- **Claves i18n obsoletas** en `lang_es.ts` / `lang_en.ts`:
+  - `episodes.connected`, `episodes.disconnected`, `episodes.dataReception`, `episodes.hl7Send`, `episodes.never`, `episodes.pendingEvents`, `episodes.pendingEventsPlural`, `episodes.pending`, `episodes.pendingPlural` (reemplazadas por `syncPipeline.*`).
+  - `offline.banner`, `offline.pendingChange`, `offline.pendingChanges`, `offline.syncing`, `offline.cachedData`, `offline.queuedEpisode`, `offline.noCache` (consumidas solo por `OfflineBanner`).
+- **Estilos huérfanos** en `EpisodesScreen.tsx`: `syncBar`, `syncDot`, `syncRow`, `syncText`, `syncLabel`, `pendingText`, helper `formatLastSync` y su import `formatTimeAgo`.
+
+---
+
 ## [2.0-beta16] - 2026-04-27
 
 ### Eliminado
@@ -202,15 +221,15 @@ Ambos eventos terminan `status=sent`, `retry_count=0`.
 
 ### Agregado
 #### Resiliencia Offline (Frontend React Native)
-- **Capa de caché offline** (`src/lib/offlineCache.ts`): Almacena episodios, detalles de episodio, notas clínicas, estadísticas de sincronización, tipos de episodio y ubicaciones en AsyncStorage. Los datos se guardan automáticamente en cada respuesta exitosa del servidor y se sirven desde caché cuando el backend no está disponible.
-- **Cola de mutaciones** (`src/lib/mutationQueue.ts`): Las creaciones de episodios y notas clínicas se encolan en AsyncStorage cuando el backend está inaccesible, y se replayan automáticamente al reconectar.
+- **Local store** (`src/lib/localStore.ts`, antes `offlineCache.ts`): Almacena episodios, detalles de episodio, notas clínicas, estadísticas de sincronización, tipos de episodio y ubicaciones en AsyncStorage. Los datos se guardan automáticamente en cada respuesta exitosa del servidor local (hospital server) y se sirven desde el local store cuando éste no está disponible.
+- **Outbox del dispositivo** (`src/lib/outbox.ts`, antes `mutationQueue.ts`): Las creaciones de episodios y notas clínicas se encolan en AsyncStorage cuando el servidor local está inaccesible, y se replayan automáticamente al reconectar.
 - **Contexto de conectividad** (`src/contexts/ConnectivityContext.tsx`): Polling cada 10 segundos al endpoint `/health` del backend. Detecta transiciones offline→online y dispara el replay automático de la cola de mutaciones. Se reactiva al volver la app a primer plano.
 - **Componente OfflineBanner** (`src/components/OfflineBanner.tsx`): Indicador visual que aparece cuando el backend es inaccesible, mostrando estado de conexión y cantidad de cambios pendientes.
 - **Traducciones offline** en `lang_es.ts` y `lang_en.ts`: Mensajes para banner offline, cambios pendientes, notas/episodios encolados, datos en caché.
 
 ### Modificado
 #### API y Navegación
-- **`src/lib/api.ts`**: Los métodos de lectura (`getEpisodes`, `getEpisode`, `getClinicalNotes`, `getSyncStats`, `getUniqueLocations`, `getUniqueEpisodeTypes`) ahora cachean respuestas exitosas y sirven datos desde caché ante errores de red.
+- **`src/lib/api.ts`**: Los métodos de lectura (`getEpisodes`, `getEpisode`, `getClinicalNotes`, `getSyncStats`, `getUniqueLocations`, `getUniqueEpisodeTypes`) usan el patrón store-first (stale-while-revalidate): sirven inmediatamente desde el local store y refrescan en background.
 - **`App.tsx`**: Si el backend está caído pero el usuario estaba autenticado previamente, navega a la pantalla de episodios en modo offline en lugar de bloquear con la pantalla de descubrimiento de servidor. Se agrega `ConnectivityProvider` al árbol de componentes.
 - **`EpisodesScreen.tsx`**: Muestra `OfflineBanner` cuando el backend no está disponible.
 - **`ClinicalNoteScreen.tsx`**: Muestra `OfflineBanner`; la creación de notas se encola cuando está offline y se muestra mensaje de confirmación.

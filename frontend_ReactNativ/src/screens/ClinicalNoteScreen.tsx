@@ -17,13 +17,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
 import { PatientHistoryModal } from '../components/PatientHistoryModal';
-import { OfflineBanner } from '../components/OfflineBanner';
 import { MicButton } from '../components/MicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import { api } from '../lib/api';
-import { mutationQueue } from '../lib/mutationQueue';
-import type { PendingMutation } from '../lib/mutationQueue';
+import { outbox } from '../lib/outbox';
+import type { OutboxEntry } from '../lib/outbox';
 import type { EpisodeDetail, ClinicalNote, EpisodeCreateRequest, ClinicalNoteCreateRequest } from '../types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -53,9 +52,9 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showHistory, setShowHistory] = useState(false);
 
-  // Build a synthetic EpisodeDetail from a queued createEpisode mutation so
-  // the user can keep working with episodes that have not yet been synced.
-  const buildLocalEpisodeDetail = (m: PendingMutation): EpisodeDetail => {
+  // Build a synthetic EpisodeDetail from a queued createEpisode outbox entry
+  // so the user can keep working with episodes that have not yet been synced.
+  const buildLocalEpisodeDetail = (m: OutboxEntry): EpisodeDetail => {
     const p = m.payload as EpisodeCreateRequest;
     return {
       id,
@@ -80,16 +79,16 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
       synced_flag: false,
       pending_notes_count: 0,
       local: true,
-      local_mutation_id: m.id,
+      local_outbox_id: m.id,
       data: (p.data_json as unknown) as EpisodeDetail['data'],
     };
   };
 
-  // Convert queued createNote mutations into ClinicalNote-shaped objects so
-  // they can be rendered inline with synced notes.
-  const queueToNotes = (mutations: PendingMutation[]): ClinicalNote[] =>
-    mutations.map((m) => ({
-      // Negative id avoids collisions with real notes from the backend.
+  // Convert queued createNote outbox entries into ClinicalNote-shaped objects
+  // so they can be rendered inline with synced notes.
+  const queueToNotes = (entries: OutboxEntry[]): ClinicalNote[] =>
+    entries.map((m) => ({
+      // Negative id avoids collisions with real notes from the hospital server.
       id: -m.timestamp,
       episode_id: id,
       author_user_id: 0,
@@ -101,7 +100,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
 
   const loadPendingLocalNotes = async (episodeKey?: string) => {
     try {
-      const pending = await mutationQueue.getPendingNotesForEpisode(id, episodeKey);
+      const pending = await outbox.getPendingNotesForEpisode(id, episodeKey);
       setPendingLocalNotes(queueToNotes(pending));
     } catch {
       setPendingLocalNotes([]);
@@ -110,7 +109,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
 
   const loadNotes = async () => {
     if (isLocalEpisode) {
-      // No backend record yet — only queued notes are available.
+      // No hospital-server record yet — only queued notes are available.
       const localKey = episode?.num_episodio;
       await loadPendingLocalNotes(localKey);
       return;
@@ -138,7 +137,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     const loadData = async () => {
       try {
         if (isLocalEpisode) {
-          const local = await mutationQueue.findLocalEpisode(id);
+          const local = await outbox.findLocalEpisode(id);
           if (!local) {
             setError(t.clinicalNote.loadError);
             return;
@@ -190,7 +189,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
       // Notes on a still-local episode MUST be queued (no real id yet).
       // Otherwise, queue when offline and post directly when online.
       if (isLocalEpisode) {
-        await mutationQueue.enqueue({
+        await outbox.enqueue({
           type: 'createNote',
           payload: { note_text: noteText },
           episodeId: id, // pseudo-id; replaced after parent createEpisode replays
@@ -200,7 +199,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
         setNoteText('');
         await loadPendingLocalNotes(episode?.num_episodio);
       } else if (!isBackendReachable) {
-        await mutationQueue.enqueue({
+        await outbox.enqueue({
           type: 'createNote',
           payload: { note_text: noteText },
           episodeId: id,
@@ -447,8 +446,6 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
               <Text style={styles.historyButtonText}>{t.patientHistory.title}</Text>
             </TouchableOpacity>
           </View>
-
-          <OfflineBanner />
 
           {/* Patient Info Card */}
           <View style={styles.patientCard}>

@@ -60,15 +60,6 @@ export const lang_en: TranslationKeys = {
     noEpisodes: 'No episodes available',
     noEpisodesInCategory: 'No episodes in this category',
     loadingEpisodes: 'Loading episodes...',
-    connected: 'Connected',
-    disconnected: 'Disconnected',
-    dataReception: 'Data reception (GET)',
-    hl7Send: 'HL7 send (POST)',
-    never: 'Never',
-    pendingEvents: 'event',
-    pendingEventsPlural: 'events',
-    pending: 'pending',
-    pendingPlural: 'pending',
     syncStatus: {
       online: 'Online',
       offline: 'Offline',
@@ -77,8 +68,20 @@ export const lang_en: TranslationKeys = {
       synced: 'Synced',
       pendingCount: 'Pending',
       new: 'New',
-      local: 'Local',
+      local: 'On device',
     },
+  },
+
+  syncPipeline: {
+    app: 'App',
+    localServer: 'Local',
+    centralServer: 'Central',
+    linkOk: 'OK',
+    lostConnection: 'Lost connection, {ago}',
+    pendingInOutbox: '{n} pending',
+    pendingEvents: '{n} pending',
+    lastSent: 'sent {ago}',
+    never: 'never',
   },
 
   clinicalNote: {
@@ -276,14 +279,7 @@ export const lang_en: TranslationKeys = {
   },
 
   offline: {
-    banner: 'No server connection — showing cached data',
-    pendingChange: 'pending change',
-    pendingChanges: 'pending changes',
-    syncing: 'syncing...',
-    cachedData: 'Cached data',
     queuedNote: 'Note queued — will be sent on reconnect',
-    queuedEpisode: 'Episode queued — will be created on reconnect',
-    noCache: 'No cached data available. Connect to the server to load data.',
   },
 
   serverDiscovery: {

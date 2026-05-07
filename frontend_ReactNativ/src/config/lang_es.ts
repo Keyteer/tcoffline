@@ -57,15 +57,6 @@ export const lang_es = {
     noEpisodes: 'No hay episodios disponibles',
     noEpisodesInCategory: 'No hay episodios en esta categoría',
     loadingEpisodes: 'Cargando episodios...',
-    connected: 'Conectado',
-    disconnected: 'Sin conexión',
-    dataReception: 'Recepción datos (GET)',
-    hl7Send: 'Envío HL7 (POST)',
-    never: 'Nunca',
-    pendingEvents: 'evento',
-    pendingEventsPlural: 'eventos',
-    pending: 'pendiente',
-    pendingPlural: 'pendientes',
     syncStatus: {
       online: 'Conectado',
       offline: 'Sin conexión',
@@ -74,8 +65,20 @@ export const lang_es = {
       synced: 'Sincronizado',
       pendingCount: 'Pendiente',
       new: 'Nuevo',
-      local: 'Local',
+      local: 'En dispositivo',
     },
+  },
+
+  syncPipeline: {
+    app: 'App',
+    localServer: 'Local',
+    centralServer: 'Central',
+    linkOk: 'OK',
+    lostConnection: 'Sin conexión, {ago}',
+    pendingInOutbox: '{n} pendientes',
+    pendingEvents: '{n} pendientes',
+    lastSent: 'enviado {ago}',
+    never: 'nunca',
   },
 
   clinicalNote: {
@@ -273,14 +276,7 @@ export const lang_es = {
   },
 
   offline: {
-    banner: 'Sin conexión al servidor — mostrando datos en caché',
-    pendingChange: 'cambio pendiente',
-    pendingChanges: 'cambios pendientes',
-    syncing: 'sincronizándose...',
-    cachedData: 'Datos en caché',
     queuedNote: 'Nota en cola — se enviará al reconectar',
-    queuedEpisode: 'Episodio en cola — se creará al reconectar',
-    noCache: 'No hay datos en caché disponibles. Conéctese al servidor para cargar datos.',
   },
 
   serverDiscovery: {
@@ -319,13 +315,13 @@ export const lang_es = {
         firstName: ['nombre', 'nombres', 'primer nombre'],
         lastName: ['apellido', 'apellidos', 'segundo apellido'],
         rut: ['rut', 'run', 'documento', 'identificación', 'cédula'],
-        noDocument: ['sin documento', 'sin rut', 'no id', 'sin id', 'no documento'],
+        noDocument: ['sin documento', 'sin documentos', 'sin rut', 'no id', 'sin id', 'no documento'],
         birthDate: ['fecha de nacimiento', 'nacimiento', 'fecha nacimiento', 'cumpleaños'],
         sex: ['sexo', 'género'],
-        episodeType: ['tipo', 'tipo de episodio', 'episodio'],
+        episodeType: ['tipo de episodio', 'tipo', 'episodio'],
         roomBox: ['habitación', 'box', 'sala', 'cama'],
-        clinicUnit: ['ubicación', 'unidad', 'unidad clínica', 'servicio'],
-        motivoConsulta: ['motivo', 'motivo de consulta', 'motivo de la consulta' , 'consulta', 'razón'],
+        clinicUnit: ['unidad clínica', 'ubicación', 'unidad', 'servicio'],
+        motivoConsulta: ['motivo', 'motivo de consulta', 'motivo de la consulta', 'razón'],
       },
       // Value aliases for fixed-option pickers.
       sexValues: {

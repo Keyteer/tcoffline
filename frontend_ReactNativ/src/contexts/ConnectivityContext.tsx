@@ -1,19 +1,29 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { api } from '../lib/api';
-import { offlineCache } from '../lib/offlineCache';
-import { mutationQueue } from '../lib/mutationQueue';
+import { localStore } from '../lib/localStore';
+import { outbox } from '../lib/outbox';
 import { CONNECTIVITY_POLL_INTERVAL } from '../config/env';
-import type { PendingMutation } from '../lib/mutationQueue';
+import type { OutboxEntry } from '../lib/outbox';
 import type { EpisodeCreateRequest, ClinicalNoteCreateRequest } from '../types';
 
 interface ConnectivityContextType {
   isBackendReachable: boolean;
-  pendingMutations: number;
+  /** Number of entries in the device-side outbox awaiting upload to the
+   *  hospital server. */
+  pendingOutbox: number;
   lastCheck: Date | null;
-  /** Increments every time the offline mutation queue is drained against the
-   *  backend. UI surfaces (e.g. the episodes list) can subscribe to this to
-   *  refresh themselves immediately when local-only items become real. */
+  /** Timestamp (ms epoch) of the moment link1 transitioned online→offline.
+   *  null when link1 is currently up or has never been observed offline. */
+  lastBackendLossAt: number | null;
+  /** Timestamp (ms epoch) of the last successful POST originated by THIS
+   *  device against the hospital server (createEpisode / createClinicalNote).
+   *  Persisted in the local store so it survives app restarts. */
+  lastDeviceSendAt: number | null;
+  /** Increments every time the device-side outbox is drained against the
+   *  hospital server. UI surfaces (e.g. the episodes list) can subscribe to
+   *  this to refresh themselves immediately when local-only items become
+   *  real. */
   lastReplayAt: number;
   checkNow: () => Promise<void>;
 }
@@ -23,39 +33,41 @@ const ConnectivityContext = createContext<ConnectivityContextType | undefined>(u
 
 export function ConnectivityProvider({ children }: { children: ReactNode }) {
   const [isBackendReachable, setIsBackendReachable] = useState(true);
-  const [pendingMutations, setPendingMutations] = useState(0);
+  const [pendingOutbox, setPendingOutbox] = useState(0);
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const [lastReplayAt, setLastReplayAt] = useState(0);
+  const [lastBackendLossAt, setLastBackendLossAt] = useState<number | null>(null);
+  const [lastDeviceSendAt, setLastDeviceSendAt] = useState<number | null>(null);
   const wasOffline = useRef(false);
   const isReplaying = useRef(false);
-  const pendingMutationsRef = useRef(0);
+  const pendingOutboxRef = useRef(0);
 
   useEffect(() => {
-    pendingMutationsRef.current = pendingMutations;
-  }, [pendingMutations]);
+    pendingOutboxRef.current = pendingOutbox;
+  }, [pendingOutbox]);
 
-  const hasPreCached = useRef(false);
-  const preCacheInFlight = useRef(false);
+  const hasPrefilledStore = useRef(false);
+  const prefillInFlight = useRef(false);
 
   /**
    * Eagerly fetch & store the form-data needed to create episodes/notes
    * (episode types and the locations for every type). This MUST run as soon
-   * as the device can talk to the backend, independently of any user action
-   * or connectivity state changes — because once it's stored, the user can
-   * keep creating episodes and notes through any subsequent outage.
+   * as the device can talk to the hospital server, independently of any user
+   * action or connectivity state changes — because once it's stored, the user
+   * can keep creating episodes and notes through any subsequent outage.
    *
    * Strategy:
-   *  - Fire on mount (regardless of perceived backend state).
+   *  - Fire on mount (regardless of perceived hospital-server state).
    *  - Use the `onUpdate` callback of each store-first getter to capture the
    *    *fresh* network response (the direct return value would be the empty
-   *    cache fallback).
-   *  - Mark `hasPreCached.current` true only when types AND every location
-   *    list have actually been written to storage. Otherwise leave it false
-   *    so the next health-check tick retries.
+   *    local-store fallback).
+   *  - Mark `hasPrefilledStore.current` true only when types AND every
+   *    location list have actually been written to the local store. Otherwise
+   *    leave it false so the next health-check tick retries.
    */
-  const preCacheFormData = useCallback(async () => {
-    if (preCacheInFlight.current) return;
-    preCacheInFlight.current = true;
+  const prefillLocalStore = useCallback(async () => {
+    if (prefillInFlight.current) return;
+    prefillInFlight.current = true;
     try {
       const captureFresh = <T,>(
         run: (onUpdate: (fresh: T) => void) => Promise<T>,
@@ -78,42 +90,48 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
         types.map((tipo) => captureFresh<string[]>((cb) => api.getUniqueLocations(tipo, cb))),
       );
       const allOk = results.every((r) => r !== null);
-      if (allOk) hasPreCached.current = true;
+      if (allOk) hasPrefilledStore.current = true;
     } finally {
-      preCacheInFlight.current = false;
+      prefillInFlight.current = false;
     }
   }, []);
 
-  const replayQueue = useCallback(async () => {
+  const replayOutbox = useCallback(async () => {
     if (isReplaying.current) return;
     isReplaying.current = true;
     let replayedAny = false;
 
     try {
-      // Reload the queue between iterations so that side effects from one
-      // mutation (e.g. createEpisode retargeting child notes) are reflected
+      // Reload the outbox between iterations so that side effects from one
+      // entry (e.g. createEpisode retargeting child notes) are reflected
       // before we replay the next entry. Without this, retargeted notes are
       // replayed with their stale in-memory negative episodeId, get skipped,
       // and then deleted by remove() — silently dropping the user's data.
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const pending = await mutationQueue.getAll();
+        const pending = await outbox.getAll();
         if (pending.length === 0) break;
-        const mutation = pending[0];
+        const entry = pending[0];
         try {
-          await replayMutation(mutation);
-          await mutationQueue.remove(mutation.id);
+          await replayOutboxEntry(entry);
+          await outbox.remove(entry.id);
           replayedAny = true;
         } catch {
-          // Stop replaying on first failure — backend may have gone down again
+          // Stop replaying on first failure — hospital server may have gone
+          // down again
           break;
         }
       }
     } finally {
       isReplaying.current = false;
-      const count = await mutationQueue.count();
-      setPendingMutations(count);
-      if (replayedAny) setLastReplayAt(Date.now());
+      const count = await outbox.count();
+      setPendingOutbox(count);
+      if (replayedAny) {
+        setLastReplayAt(Date.now());
+        // Immediately surface the updated send timestamp — don't wait for the
+        // next health-check tick, which could be 30 s away.
+        localStore.getLastDeviceSendAt().then(setLastDeviceSendAt);
+      }
     }
   }, []);
 
@@ -125,36 +143,47 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
       setIsBackendReachable(nowOnline);
       setLastCheck(new Date());
       wasOffline.current = false;
+      // Link1 is up — clear any stale loss timestamp.
+      setLastBackendLossAt(null);
 
-      // Re-attempt pre-cache on every successful health check until the
-      // critical form-data is fully stored. This is independent of user
-      // actions and runs as soon as the backend is reachable for the first
-      // time, on every reconnect, and on every retry after a partial fetch.
-      if (!hasPreCached.current) {
-        preCacheFormData().then(() => {
-          if (hasPreCached.current) setLastReplayAt(Date.now());
+      // Re-attempt local-store prefill on every successful health check until
+      // the critical form-data is fully stored. This is independent of user
+      // actions and runs as soon as the hospital server is reachable for the
+      // first time, on every reconnect, and on every retry after a partial
+      // fetch.
+      if (!hasPrefilledStore.current) {
+        prefillLocalStore().then(() => {
+          if (hasPrefilledStore.current) setLastReplayAt(Date.now());
         });
       } else if (wasJustOffline) {
         // After a real offline→online transition, refresh the form-data so
-        // newly added types/locations on the server reach the device.
-        preCacheFormData().then(() => setLastReplayAt(Date.now()));
+        // newly added types/locations on the hospital server reach the device.
+        prefillLocalStore().then(() => setLastReplayAt(Date.now()));
       }
 
-      // Always try to drain the queue if anything is pending and we're online.
-      // This handles the case where mutations were enqueued but the
-      // offline→online transition was missed (e.g. app restart with pending items).
-      const pending = await mutationQueue.count();
+      // Always try to drain the outbox if anything is pending and we're
+      // online. This handles the case where entries were enqueued but the
+      // offline→online transition was missed (e.g. app restart with pending
+      // items).
+      const pending = await outbox.count();
       if (pending > 0) {
-        replayQueue();
-      } else if (pending !== pendingMutationsRef.current) {
-        setPendingMutations(pending);
+        replayOutbox();
+      } else if (pending !== pendingOutboxRef.current) {
+        setPendingOutbox(pending);
       }
+
+      // Refresh the device→local send timestamp from the local store on
+      // every health-check tick (cheap AsyncStorage read).
+      localStore.getLastDeviceSendAt().then((ts) => setLastDeviceSendAt(ts));
     } catch {
       setIsBackendReachable(false);
+      // Stamp the loss time only on the actual online→offline edge to avoid
+      // resetting it on every failed poll while we stay offline.
+      if (!wasOffline.current) setLastBackendLossAt(Date.now());
       wasOffline.current = true;
       setLastCheck(new Date());
     }
-  }, [replayQueue, preCacheFormData]);
+  }, [replayOutbox, prefillLocalStore]);
 
   const checkNow = useCallback(async () => {
     await checkBackend();
@@ -178,36 +207,37 @@ export function ConnectivityProvider({ children }: { children: ReactNode }) {
     return () => subscription.remove();
   }, [checkBackend]);
 
-  // Load pending count on mount
+  // Load pending count and last device-send timestamp on mount
   useEffect(() => {
-    mutationQueue.count().then(setPendingMutations);
+    outbox.count().then(setPendingOutbox);
+    localStore.getLastDeviceSendAt().then(setLastDeviceSendAt);
   }, []);
 
   // Eager form-data warm-up. Runs on mount independently of any other state:
-  //   1. If types are already in local storage, mark pre-cache satisfied so
+  //   1. If types are already in the local store, mark prefill satisfied so
   //      subsequent health checks don't refetch unnecessarily.
-  //   2. Always fire one immediate pre-cache attempt so the app starts
-  //      pulling required data the moment it boots, even before the first
+  //   2. Always fire one immediate prefill attempt so the app starts pulling
+  //      required data the moment it boots, even before the first
   //      health-check tick completes.
   useEffect(() => {
     (async () => {
       try {
-        const storedTypes = await offlineCache.getEpisodeTypes();
+        const storedTypes = await localStore.getEpisodeTypes();
         if (storedTypes && storedTypes.length > 0) {
-          // We at least have types stored — treat as cached; checkBackend
-          // will still run preCacheFormData on the first true offline→online
+          // We at least have types stored — treat as prefilled; checkBackend
+          // will still run prefillLocalStore on the first true offline→online
           // transition to refresh.
-          hasPreCached.current = true;
+          hasPrefilledStore.current = true;
         }
       } catch { /* ignore */ }
-      preCacheFormData().then(() => {
-        if (hasPreCached.current) setLastReplayAt(Date.now());
+      prefillLocalStore().then(() => {
+        if (hasPrefilledStore.current) setLastReplayAt(Date.now());
       });
     })();
-  }, [preCacheFormData]);
+  }, [prefillLocalStore]);
 
   return (
-    <ConnectivityContext.Provider value={{ isBackendReachable, pendingMutations, lastCheck, lastReplayAt, checkNow }}>
+    <ConnectivityContext.Provider value={{ isBackendReachable, pendingOutbox, lastCheck, lastReplayAt, lastBackendLossAt, lastDeviceSendAt, checkNow }}>
       {children}
     </ConnectivityContext.Provider>
   );
@@ -221,22 +251,22 @@ export function useConnectivity() {
   return context;
 }
 
-async function replayMutation(mutation: PendingMutation): Promise<void> {
-  switch (mutation.type) {
+async function replayOutboxEntry(entry: OutboxEntry): Promise<void> {
+  switch (entry.type) {
     case 'createEpisode': {
-      const payload = mutation.payload as EpisodeCreateRequest;
+      const payload = entry.payload as EpisodeCreateRequest;
       const created = await api.createEpisode(payload);
       // Re-target any queued notes that were attached to this still-local
-      // episode so they can post against the real backend id.
-      await mutationQueue.retargetNotesForLocalEpisode(payload.num_episodio, created.id);
+      // episode so they can post against the real hospital-server id.
+      await outbox.retargetNotesForLocalEpisode(payload.num_episodio, created.id);
       break;
     }
     case 'createNote':
-      if (mutation.episodeId !== undefined && mutation.episodeId >= 0) {
-        await api.createClinicalNote(mutation.episodeId, mutation.payload as ClinicalNoteCreateRequest);
+      if (entry.episodeId !== undefined && entry.episodeId >= 0) {
+        await api.createClinicalNote(entry.episodeId, entry.payload as ClinicalNoteCreateRequest);
       }
       // If episodeId is still negative, the parent createEpisode hasn't
-      // replayed yet — leave this note in the queue; the parent's success
+      // replayed yet — leave this note in the outbox; the parent's success
       // path will retarget it on the next pass.
       break;
   }

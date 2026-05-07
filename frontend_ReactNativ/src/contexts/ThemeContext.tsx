@@ -44,6 +44,8 @@ const lightColors = {
   badgeOnlineText: '#166534',
   badgeOfflineBg: '#FEE2E2',
   badgeOfflineText: '#991B1B',
+  badgeLocalBg: '#FEF3C7',
+  badgeLocalText: '#92400E',
   overlay: 'rgba(0,0,0,0.5)',
 };
 
@@ -79,6 +81,8 @@ const darkColors: typeof lightColors = {
   badgeOnlineText: '#86EFAC',
   badgeOfflineBg: '#450A0A',
   badgeOfflineText: '#FCA5A5',
+  badgeLocalBg: '#451A03',
+  badgeLocalText: '#FCD34D',
   overlay: 'rgba(0,0,0,0.7)',
 };
 

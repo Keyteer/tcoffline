@@ -15,10 +15,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
 import { EpisodeRow } from '../components/EpisodeRow';
-import { OfflineBanner } from '../components/OfflineBanner';
+import { SyncPipeline } from '../components/SyncPipeline';
 import { api } from '../lib/api';
-import { mutationQueue } from '../lib/mutationQueue';
-import { formatTimeAgo } from '../lib/timeAgo';
+import { outbox } from '../lib/outbox';
 import type { Episode, EpisodeType, SyncStats } from '../types';
 import type { EpisodeCreateRequest } from '../types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -44,20 +43,21 @@ export function EpisodesScreen({ navigation }: Props) {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadAllEpisodes = useCallback(async () => {
-    // Build pseudo-Episode entries from the offline mutation queue so that
+    // Build pseudo-Episode entries from the device-side outbox so that
     // episodes created while disconnected appear immediately in the list
     // with a "Local" badge until they are synced.
     const buildLocalEpisodes = async (): Promise<Episode[]> => {
       try {
-        const pending = await mutationQueue.getAll();
+        const pending = await outbox.getAll();
         return pending
           .filter((m) => m.type === 'createEpisode')
           .map((m) => {
             const p = m.payload as EpisodeCreateRequest;
             return {
-              // Stable negative pseudo-id derived from the mutation timestamp,
-              // so ClinicalNoteScreen can find the originating queue entry.
-              id: mutationQueue.localEpisodePseudoId(m),
+              // Stable negative pseudo-id derived from the outbox-entry
+              // timestamp, so ClinicalNoteScreen can find the originating
+              // outbox entry.
+              id: outbox.localEpisodePseudoId(m),
               mrn: p.mrn,
               num_episodio: p.num_episodio,
               run: p.run,
@@ -79,7 +79,7 @@ export function EpisodesScreen({ navigation }: Props) {
               synced_flag: false,
               pending_notes_count: 0,
               local: true,
-              local_mutation_id: m.id,
+              local_outbox_id: m.id,
             } as Episode;
           });
       } catch {
@@ -168,13 +168,8 @@ export function EpisodesScreen({ navigation }: Props) {
 
   const handleEpisodeClick = (episodeId: number) => {
     // Local-only episodes use a negative pseudo-id; ClinicalNoteScreen knows
-    // how to load them from the offline mutation queue.
+    // how to load them from the device-side outbox.
     navigation.navigate('ClinicalNote', { id: episodeId });
-  };
-
-  const formatLastSync = (lastSync: string | null) => {
-    if (!lastSync) return t.episodes.never;
-    return formatTimeAgo(lastSync, t.timeAgo);
   };
 
   const styles = StyleSheet.create({
@@ -227,42 +222,6 @@ export function EpisodesScreen({ navigation }: Props) {
     },
     readOnlyText: {
       fontSize: 13,
-      color: colors.warning,
-    },
-    syncBar: {
-      backgroundColor: colors.surfaceSecondary,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      padding: 12,
-      marginBottom: 8,
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      gap: 12,
-    },
-    syncDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      marginRight: 6,
-    },
-    syncRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    syncText: {
-      fontSize: 12,
-      color: colors.text,
-    },
-    syncLabel: {
-      fontWeight: '600',
-      fontSize: 12,
-      color: colors.text,
-    },
-    pendingText: {
-      fontSize: 12,
-      fontWeight: '600',
       color: colors.warning,
     },
     tabsRow: {
@@ -328,38 +287,7 @@ export function EpisodesScreen({ navigation }: Props) {
           </View>
         )}
 
-        <OfflineBanner />
-
-        {syncStats && (
-          <View style={styles.syncBar}>
-            <View style={styles.syncRow}>
-              <View
-                style={[
-                  styles.syncDot,
-                  { backgroundColor: syncStats.connection.is_online ? '#22C55E' : '#EF4444' },
-                ]}
-              />
-              <Text style={styles.syncLabel}>
-                {syncStats.connection.is_online ? t.episodes.connected : t.episodes.disconnected}
-              </Text>
-            </View>
-            <Text style={styles.syncText}>
-              <Text style={styles.syncLabel}>{t.episodes.dataReception}:</Text>{' '}
-              {formatLastSync(syncStats.last_downstream_sync)}
-            </Text>
-            <Text style={styles.syncText}>
-              <Text style={styles.syncLabel}>{t.episodes.hl7Send}:</Text>{' '}
-              {formatLastSync(syncStats.last_upstream_sync)}
-            </Text>
-            {syncStats.pending_events > 0 && (
-              <Text style={styles.pendingText}>
-                {syncStats.pending_events}{' '}
-                {syncStats.pending_events !== 1 ? t.episodes.pendingEventsPlural : t.episodes.pendingEvents}{' '}
-                {syncStats.pending_events !== 1 ? t.episodes.pendingPlural : t.episodes.pending}
-              </Text>
-            )}
-          </View>
-        )}
+        {syncStats && <SyncPipeline syncStats={syncStats} />}
 
         {availableTabs.length > 0 && (
           <View style={styles.tabsRow}>

@@ -19,14 +19,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
-import { OfflineBanner } from '../components/OfflineBanner';
 import { MicButton } from '../components/MicButton';
 import { CommandMicButton } from '../components/CommandMicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import { api } from '../lib/api';
-import { offlineCache } from '../lib/offlineCache';
-import { mutationQueue } from '../lib/mutationQueue';
+import { localStore } from '../lib/localStore';
+import { outbox } from '../lib/outbox';
 import { formatRUT, getRUTError } from '../lib/rutValidation';
 import { parseSpokenDate, cleanSpokenRut, parseSpokenName, fuzzyMatchOption } from '../lib/speechParsers';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -142,11 +141,11 @@ export function NewEpisodeScreen({ navigation }: Props) {
 
   useEffect(() => {
     const loadEpisodeTypes = async () => {
-      // Show cached data immediately (stale-while-revalidate)
-      const cached = await offlineCache.getEpisodeTypes();
-      if (cached && cached.length > 0) {
-        setAvailableEpisodeTypes(cached);
-        if (!episodeType) setEpisodeType(cached[0]);
+      // Show stored data immediately (store-first / stale-while-revalidate)
+      const stored = await localStore.getEpisodeTypes();
+      if (stored && stored.length > 0) {
+        setAvailableEpisodeTypes(stored);
+        if (!episodeType) setEpisodeType(stored[0]);
       }
       // Refresh from network in background
       try {
@@ -156,7 +155,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
           setEpisodeType(types[0]);
         }
       } catch {
-        // ignore — cached data already shown
+        // ignore — stored data already shown
       }
     };
     loadEpisodeTypes();
@@ -165,10 +164,10 @@ export function NewEpisodeScreen({ navigation }: Props) {
   useEffect(() => {
     if (!episodeType) return;
     const loadLocations = async () => {
-      // Show cached data immediately (stale-while-revalidate)
-      const cached = await offlineCache.getLocations(episodeType);
-      if (cached && cached.length > 0) {
-        setAvailableLocations(cached);
+      // Show stored data immediately (store-first / stale-while-revalidate)
+      const stored = await localStore.getLocations(episodeType);
+      if (stored && stored.length > 0) {
+        setAvailableLocations(stored);
       } else {
         setIsLoadingLocations(true);
       }
@@ -177,7 +176,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
         const locations = await api.getUniqueLocations(episodeType);
         setAvailableLocations(Array.isArray(locations) ? locations : []);
       } catch {
-        if (!cached || cached.length === 0) setAvailableLocations([]);
+        if (!stored || stored.length === 0) setAvailableLocations([]);
       } finally {
         setIsLoadingLocations(false);
       }
@@ -260,7 +259,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
       };
 
       if (!isBackendReachable) {
-        await mutationQueue.enqueue({
+        await outbox.enqueue({
           type: 'createEpisode',
           payload: createRequest,
         });
@@ -462,8 +461,6 @@ export function NewEpisodeScreen({ navigation }: Props) {
           </TouchableOpacity>
 
           <Text style={styles.title}>{t.newEpisode.titlePatient}</Text>
-
-          <OfflineBanner />
 
           <View style={styles.card}>
             <View style={styles.sectionHeader}>
