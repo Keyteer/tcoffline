@@ -8,10 +8,8 @@ import {
   ActivityIndicator,
   StyleSheet,
   Switch,
-  Platform,
   Modal,
   FlatList,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -450,12 +448,11 @@ export function NewEpisodeScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Header navigation={navigation} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + keyboardHeight }]}
-          keyboardShouldPersistTaps="handled"
-          onTouchStart={() => stopActiveSpeechRecognition()}
-        >
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + keyboardHeight }]}
+        keyboardShouldPersistTaps="handled"
+        onTouchStart={() => stopActiveSpeechRecognition()}
+      >
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <Text style={styles.backText}>← {t.newEpisode.backToEpisodes}</Text>
           </TouchableOpacity>
@@ -655,7 +652,6 @@ export function NewEpisodeScreen({ navigation }: Props) {
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
 
       {renderPickerModal(
         showSexPicker,

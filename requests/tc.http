@@ -1,0 +1,18 @@
+### ================================================================
+### TrakCare HL7 Inbound
+###
+### 1. Build the payload:  python requests/build_hl7.py [a28|a01|a03|oru]
+### 2. Edit the < line below to point to the desired file
+### 3. Send
+### ================================================================
+
+@tcBaseUrl = http://demo01.tcdb.vtas.cl.intersystems.com
+@endpoint  = /demo01/tcoffline/hl7inbound
+# base64("demo:demodemo")
+@auth      = Basic ZGVtbzpkZW1vZGVtbw==
+
+POST {{tcBaseUrl}}{{endpoint}}
+Authorization: {{auth}}
+Content-Type: application/json
+
+< ./hl7_BadMessage.json

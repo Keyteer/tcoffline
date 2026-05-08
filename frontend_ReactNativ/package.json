@@ -11,30 +11,41 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
+  "engines": {
+    "node": ">=20.19.0 <25",
+    "npm": ">=10"
+  },
+  "overrides": {
+    "postcss": "^8.5.10",
+    "jsdom": "^25.0.1",
+    "http-proxy-agent": "^7.0.2",
+    "@tootallnate/once": "^3.0.1"
+  },
   "dependencies": {
-    "@formatjs/intl-getcanonicallocales": "^3.2.5",
-    "@formatjs/intl-locale": "^5.3.4",
+    "@formatjs/intl-getcanonicallocales": "^3.2.6",
+    "@formatjs/intl-locale": "^5.3.5",
     "@react-native-async-storage/async-storage": "^2.2.0",
-    "@react-navigation/native": "^7.2.2",
-    "@react-navigation/native-stack": "^7.14.10",
+    "@react-navigation/native": "^7.2.3",
+    "@react-navigation/native-stack": "^7.14.13",
     "any-date-parser": "^2.2.3",
-    "expo": "~54.0.33",
-    "expo-build-properties": "~1.0.10",
-    "expo-dev-client": "~6.0.20",
-    "expo-localization": "~17.0.8",
-    "expo-secure-store": "~15.0.8",
+    "expo": "~55.0.0",
+    "expo-build-properties": "~55.0.13",
+    "expo-dev-client": "~55.0.32",
+    "expo-localization": "~55.0.13",
+    "expo-secure-store": "~55.0.13",
     "expo-speech-recognition": "^3.1.3",
-    "expo-status-bar": "~3.0.9",
-    "react": "19.1.0",
-    "react-native": "0.81.5",
+    "expo-status-bar": "~55.0.6",
+    "expo-system-ui": "~55.0.17",
+    "react": "19.2.0",
+    "react-native": "0.83.6",
     "react-native-safe-area-context": "~5.6.0",
-    "react-native-screens": "~4.16.0"
+    "react-native-screens": "~4.23.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "@types/react": "~19.1.0",
+    "@types/react": "~19.2.10",
     "jest": "^29.7.0",
-    "jest-expo": "~54.0.0",
+    "jest-expo": "~55.0.17",
     "typescript": "~5.9.2"
   },
   "private": true

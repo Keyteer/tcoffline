@@ -1,0 +1,114 @@
+### ================================================================
+### Hospital Server — Key operations
+### FastAPI: http://localhost:8000  (docs at /docs)
+###
+### Focus: create episode + create note (the two mutations that drive
+### outbox → HL7 flow). Simple GETs and trigger endpoints are better
+### handled from /docs or directly via DB.
+### ================================================================
+
+@baseUrl = http://localhost:8000
+
+### ----------------------------------------------------------------
+### Auth — capture token for all requests below
+### ----------------------------------------------------------------
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}
+
+###
+@token = {{login.response.body.access_token}}
+
+### ----------------------------------------------------------------
+### Create Episode
+###
+### Triggers outbox: episode_created → A28 + A01 sent to central.
+### - mrn:          OFFP prefix = offline patient (not yet in central)
+### - num_episodio: OFFE prefix = offline episode
+### - paciente:     "Apellido Nombre" — stored as "Apellido, Nombre"
+### - tipo:         must match a value confirmed by central (synced_flag=true)
+### - ubicacion:    must match a CTLOC code/description in central
+### ----------------------------------------------------------------
+# @name createEpisode
+POST {{baseUrl}}/episodes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "mrn":             "OFFP{{$randomInt 100000 999999}}",
+  "num_episodio":    "OFFE{{$randomInt 100000 999999}}",
+  "run":             "12345678-9",
+  "paciente":        "Soto Manuel",
+  "sexo":            "M",
+  "fecha_nacimiento":"1980-06-15T00:00:00",
+  "tipo":            "Ambulatorio",
+  "ubicacion":       "Consulta Telemedicina",
+  "habitacion":      "Box 3",
+  "estado":          "Activo",
+  "motivo_consulta": "Dolor abdominal de 3 días de evolución",
+  "profesional":     "doctest",
+  "data_json": {}
+}
+
+###
+@episodeId = {{createEpisode.response.body.id}}
+
+### ----------------------------------------------------------------
+### Create Clinical Note
+###
+### Triggers outbox: clinical_note_created → ORU^R01 sent to central.
+### Replace {{episodeId}} with a real DB id if not chaining.
+### ----------------------------------------------------------------
+# @name createNote
+POST {{baseUrl}}/episodes/{{episodeId}}/notes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "note_text": "Paciente refiere dolor abdominal difuso de 3 días. Afebril. Abdomen blando, doloroso a la palpación en FID. Se solicita hemograma y ecografía abdominal. Se indica analgesia y control en 24 h."
+}
+
+### ----------------------------------------------------------------
+### Create Note on an existing episode (replace id manually)
+### ----------------------------------------------------------------
+POST {{baseUrl}}/episodes/1/notes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "note_text": "Evolución: paciente en buenas condiciones generales. Hemodinámicamente estable. Se decide alta con indicaciones."
+}
+
+### ----------------------------------------------------------------
+### Update episode (e.g. discharge)
+### Only local — no upstream HL7 for updates (central ignores A08).
+### ----------------------------------------------------------------
+PUT {{baseUrl}}/episodes/{{episodeId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "estado":    "Alta",
+  "ubicacion": "Consulta Telemedicina"
+}
+
+### ----------------------------------------------------------------
+### Outbox / Sync — inspect and retry
+### ----------------------------------------------------------------
+
+### Current sync + connectivity status
+GET {{baseUrl}}/sync/stats
+Authorization: Bearer {{token}}
+
+### Retry all failed outbox events
+POST {{baseUrl}}/sync/retry-failed
+Authorization: Bearer {{token}}
+
+### Trigger upstream sync manually (flush outbox now)
+POST {{baseUrl}}/sync/trigger
+Authorization: Bearer {{token}}

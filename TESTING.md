@@ -67,32 +67,29 @@ npm run test:coverage
 
 ## Pruebas manuales — archivos .http
 
-El directorio `requests/` contiene archivos `.http` para probar los endpoints directamente
-desde VS Code (extensión [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client))
-o cualquier cliente compatible (HTTPie, IntelliJ HTTP Client).
+El directorio `requests/` contiene dos archivos `.http` para VS Code
+([REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client))
+y un script para generar los payloads HL7.
 
-| Archivo | Endpoints |
-|---------|-----------|
-| `requests/auth.http` | Login, refresh, `/auth/me` |
-| `requests/episodes.http` | CRUD episodios, tipos, ubicaciones |
-| `requests/notes.http` | CRUD notas clínicas |
-| `requests/sync.http` | Trigger sync, retry, stats, status |
-| `requests/general.http` | Health checks, discovery, settings |
+| Archivo | Uso |
+|---------|-----|
+| `requests/backend.http` | Hospital server: crear episodio, crear nota, sync/outbox |
+| `requests/tc.http` | Central HIS: enviar un mensaje HL7 al endpoint `/hl7inbound` |
+| `requests/build_hl7.py` | Genera los payloads JSON para `tc.http` |
 
-### Uso básico con REST Client (VS Code)
+### Hospital server (`backend.http`)
 
-1. Instalar la extensión **REST Client** (`humao.rest-client`)
-2. Abrir cualquier archivo en `requests/`
-3. Hacer click en **Send Request** sobre el endpoint deseado
-4. Ajustar el `@baseUrl` y el token JWT en la cabecera del archivo si es necesario
+1. Instalar **REST Client** (`humao.rest-client`)
+2. Abrir `requests/backend.http` y ejecutar **Login** primero (captura el token)
+3. Ejecutar **Create Episode** o **Create Note** según sea necesario
 
-```http
-# Ejemplo: requests/auth.http
-@baseUrl = http://localhost:8000
+Los endpoints simples (GET listas, health checks, settings) están disponibles en `/docs`.
 
-### Login
-POST {{baseUrl}}/auth/token
-Content-Type: application/x-www-form-urlencoded
+### Central HIS — HL7 (`tc.http`)
 
-username=admin&password=admin123
-```
+1. Editar las variables en la cabecera de `requests/build_hl7.py` (paciente, episodio, nota)
+2. Generar el payload:
+   ```bash
+   python requests/build_hl7.py a28   # o a01 | a03 | oru | (sin args = todos)
+   ```
+3. En `tc.http`, cambiar la línea `< ./hl7_a28.json` al archivo deseado y enviar

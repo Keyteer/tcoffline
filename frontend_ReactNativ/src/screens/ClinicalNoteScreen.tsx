@@ -7,7 +7,6 @@ import {
   ScrollView,
   ActivityIndicator,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -430,8 +429,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
       <Header navigation={navigation} />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
+      <ScrollView
           contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + keyboardHeight }]}
           keyboardShouldPersistTaps="handled"
           onTouchStart={() => stopActiveSpeechRecognition()}
@@ -626,7 +624,6 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
             </View>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
 
       {/* Patient History Modal */}
       {episode && (

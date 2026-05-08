@@ -10,6 +10,6 @@ Thumbs.db
 venv/
 __pycache__/
 *.pyc
+requests/hl7_*.json
 *.db
-package-lock.json
 .github/

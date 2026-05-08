@@ -18,6 +18,7 @@ import {
   getServerUrlSync,
 } from '../lib/serverConfig';
 import { auth } from '../lib/auth';
+import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/types';
@@ -32,6 +33,7 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
   const { t } = useLanguage();
   const d = t.serverDiscovery;
   const skipAutoConnect = route.params?.skipAutoConnect === true;
+  const keyboardHeight = useKeyboardHeight();
 
   const [serverUrl, setUrl] = useState(getServerUrlSync());
   const [error, setError] = useState('');
@@ -224,7 +226,7 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: keyboardHeight }]} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={styles.iconCircle}>
             <Text style={styles.icon}>📡</Text>
