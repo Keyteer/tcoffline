@@ -10,9 +10,6 @@ type Props = {
   syncStats: SyncStats | null;
 };
 
-const OK_COLOR = '#22C55E';
-const DOWN_COLOR = '#EF4444';
-
 // Diagnostic indicator showing the full upload chain:
 //   App  ── link1 ──  Servidor local  ── link2 ──  Servidor central
 // link1 = device → hospital server (`isBackendReachable` from
@@ -93,8 +90,8 @@ export function SyncPipeline({ syncStats }: Props) {
       width: '100%',
       borderRadius: 1,
     },
-    lineOk: { backgroundColor: OK_COLOR },
-    lineDown: { backgroundColor: DOWN_COLOR },
+    lineOk: { backgroundColor: colors.success },
+    lineDown: { backgroundColor: colors.error },
     badge: {
       position: 'absolute',
       top: -2,
@@ -120,12 +117,12 @@ export function SyncPipeline({ syncStats }: Props) {
       borderRadius: 11,
       backgroundColor: colors.surface,
       borderWidth: 2,
-      borderColor: DOWN_COLOR,
+      borderColor: colors.error,
       alignItems: 'center',
       justifyContent: 'center',
     },
     xText: {
-      color: DOWN_COLOR,
+      color: colors.error,
       fontSize: 12,
       fontWeight: '900',
       lineHeight: 14,
