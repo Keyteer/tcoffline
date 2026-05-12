@@ -38,6 +38,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
   const [nombre, setNombre] = useState(user.nombre || '');
   const [filtros, setFiltros] = useState(user.filtros || '');
   const [enableReadOnlyMode, setEnableReadOnlyMode] = useState(true);
+  const [enableNewEpisodeButton, setEnableNewEpisodeButton] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -59,6 +60,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
       setConfirmPassword('');
       api.getSystemSettings().then(settings => {
         setEnableReadOnlyMode(settings.enable_read_only_mode);
+        setEnableNewEpisodeButton(settings.enable_new_episode_button);
       }).catch(() => {
         // ignore — not available offline
       });
@@ -129,7 +131,10 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
 
       if (user.is_admin) {
         const currentSettings = await api.getSystemSettings();
-        if (enableReadOnlyMode !== currentSettings.enable_read_only_mode) {
+        if (
+          enableReadOnlyMode !== currentSettings.enable_read_only_mode ||
+          enableNewEpisodeButton !== currentSettings.enable_new_episode_button
+        ) {
           hasSystemChanges = true;
         }
       }
@@ -147,7 +152,10 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
       }
 
       if (hasSystemChanges) {
-        await api.updateSystemSettings({ enable_read_only_mode: enableReadOnlyMode });
+        await api.updateSystemSettings({
+          enable_read_only_mode: enableReadOnlyMode,
+          enable_new_episode_button: enableNewEpisodeButton,
+        });
       }
 
       setSuccess(t.userSettings.saveSuccess || 'Configuración actualizada correctamente');
@@ -450,7 +458,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
 
                 {user.is_admin && (
                   <View style={styles.adminSection}>
-                    <Text style={styles.adminSectionTitle}>Configuración del Sistema</Text>
+                    <Text style={styles.adminSectionTitle}>{t.systemSettings.sectionTitle}</Text>
                     <View style={styles.readOnlyBox}>
                       <Switch
                         value={enableReadOnlyMode}
@@ -461,10 +469,27 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                       />
                       <View style={{ flex: 1 }}>
                         <Text style={styles.readOnlyLabel}>
-                          Habilitar Modo Solo Lectura (Todo el Sistema)
+                          {t.systemSettings.readOnlyModeLabel}
                         </Text>
                         <Text style={styles.readOnlyHint}>
-                          Cuando está habilitado, TODOS los usuarios no podrán crear episodios ni notas cuando el sistema central esté en línea
+                          {t.systemSettings.readOnlyModeDesc}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[styles.readOnlyBox, { marginTop: 12 }]}>
+                      <Switch
+                        value={enableNewEpisodeButton}
+                        onValueChange={setEnableNewEpisodeButton}
+                        disabled={isSubmitting}
+                        trackColor={{ false: colors.border, true: colors.primary }}
+                        thumbColor="#FFF"
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.readOnlyLabel}>
+                          {t.systemSettings.newEpisodeButtonLabel}
+                        </Text>
+                        <Text style={styles.readOnlyHint}>
+                          {t.systemSettings.newEpisodeButtonDesc}
                         </Text>
                       </View>
                     </View>

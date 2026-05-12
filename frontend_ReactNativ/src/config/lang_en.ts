@@ -1,6 +1,13 @@
 import type { TranslationKeys } from './lang_es';
 
 export const lang_en: TranslationKeys = {
+  systemSettings: {
+    sectionTitle: 'System Configuration',
+    readOnlyModeLabel: 'Enable Read-Only Mode (Entire System)',
+    readOnlyModeDesc: 'When enabled, ALL users will be unable to create episodes or notes when the central system is online',
+    newEpisodeButtonLabel: 'Enable "New Episode" button',
+    newEpisodeButtonDesc: 'When enabled, the button to create new episodes will be visible to all users',
+  },
   readOnlyMode: {
     title: 'Read-Only Mode Active',
     loginAlert: '⚠️ Read-Only Mode Activated\n\nThe system detected a connection to the central server.\n\nDuring this time, you will not be able to:\n• Create new episodes\n• Record clinical notes\n\nYou will only be able to view existing information.',

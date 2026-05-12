@@ -26,6 +26,7 @@ export interface UserCreateRequest {
 
 export interface SystemSettings {
   enable_read_only_mode: boolean;
+  enable_new_episode_button: boolean;
 }
 
 export interface Episode {

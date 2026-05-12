@@ -41,6 +41,7 @@ export function EpisodesScreen({ navigation }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [enableNewEpisodeButton, setEnableNewEpisodeButton] = useState(false);
 
   const loadAllEpisodes = useCallback(async () => {
     // Build pseudo-Episode entries from the device-side outbox so that
@@ -131,17 +132,27 @@ export function EpisodesScreen({ navigation }: Props) {
     }
   }, []);
 
+  const loadSystemSettings = useCallback(async () => {
+    try {
+      const settings = await api.getSystemSettings();
+      setEnableNewEpisodeButton(settings.enable_new_episode_button);
+    } catch {
+      // ignore — keep current value (defaults to hidden) when offline
+    }
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([loadAllEpisodes(), loadSyncStats()]).finally(() => setIsLoading(false));
+    Promise.all([loadAllEpisodes(), loadSyncStats(), loadSystemSettings()]).finally(() => setIsLoading(false));
 
     const interval = setInterval(() => {
       loadAllEpisodes();
       loadSyncStats();
+      loadSystemSettings();
     }, EPISODES_REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [loadAllEpisodes, loadSyncStats]);
+  }, [loadAllEpisodes, loadSyncStats, loadSystemSettings]);
 
   // Refresh immediately after the offline mutation queue is drained, so
   // episodes flip from "Local" to a real backend record without the user
@@ -271,13 +282,15 @@ export function EpisodesScreen({ navigation }: Props) {
       <View style={styles.content}>
         <View style={styles.titleRow}>
           <Text style={styles.title}>{t.episodes.title}</Text>
-          <TouchableOpacity
-            style={[styles.newButton, isReadOnlyMode && styles.newButtonDisabled]}
-            onPress={() => navigation.navigate('NewEpisode')}
-            disabled={isReadOnlyMode}
-          >
-            <Text style={styles.newButtonText}>+ {t.episodes.newEpisode}</Text>
-          </TouchableOpacity>
+          {enableNewEpisodeButton && (
+            <TouchableOpacity
+              style={[styles.newButton, isReadOnlyMode && styles.newButtonDisabled]}
+              onPress={() => navigation.navigate('NewEpisode')}
+              disabled={isReadOnlyMode}
+            >
+              <Text style={styles.newButtonText}>+ {t.episodes.newEpisode}</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {isReadOnlyMode && (

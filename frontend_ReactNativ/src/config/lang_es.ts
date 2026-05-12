@@ -1,4 +1,11 @@
 export const lang_es = {
+  systemSettings: {
+    sectionTitle: 'Configuración del Sistema',
+    readOnlyModeLabel: 'Habilitar Modo Solo Lectura (Sistema Completo)',
+    readOnlyModeDesc: 'Cuando está habilitado, NINGÚN usuario podrá crear episodios ni notas cuando el sistema central esté en línea',
+    newEpisodeButtonLabel: 'Habilitar botón "Nuevo Episodio"',
+    newEpisodeButtonDesc: 'Cuando está habilitado, el botón para crear nuevos episodios será visible para todos los usuarios',
+  },
   readOnlyMode: {
     title: 'Modo Solo Lectura Activo',
     loginAlert: '⚠️ Modo Solo Lectura Activado\n\nEl sistema detectó conexión con el servidor central.\n\nDurante este tiempo, no podrá:\n• Crear nuevos episodios\n• Registrar notas clínicas\n\nSolo podrá consultar información existente.',

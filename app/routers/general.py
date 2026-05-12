@@ -90,21 +90,32 @@ def get_sync_status(
     }
 
 
+def _get_bool_setting(db: Session, key: str, default: bool) -> bool:
+    record = db.query(models.SyncState).filter(models.SyncState.key == key).first()
+    if record is None:
+        return default
+    return record.value.lower() == "true"
+
+
+def _upsert_bool_setting(db: Session, key: str, value: bool) -> None:
+    record = db.query(models.SyncState).filter(models.SyncState.key == key).first()
+    str_value = "true" if value else "false"
+    if record:
+        record.value = str_value
+    else:
+        db.add(models.SyncState(key=key, value=str_value))
+
+
 @router.get("/settings", response_model=schemas.SystemSettings)
 def get_system_settings(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
     """Get system settings"""
-    read_only_record = db.query(models.SyncState).filter(
-        models.SyncState.key == "enable_read_only_mode"
-    ).first()
-
-    enable_read_only = True
-    if read_only_record:
-        enable_read_only = read_only_record.value.lower() == "true"
-
-    return {"enable_read_only_mode": enable_read_only}
+    return {
+        "enable_read_only_mode": _get_bool_setting(db, "enable_read_only_mode", True),
+        "enable_new_episode_button": _get_bool_setting(db, "enable_new_episode_button", False),
+    }
 
 
 @router.put("/settings", response_model=schemas.SystemSettings)
@@ -114,21 +125,11 @@ def update_system_settings(
     current_user: models.User = Depends(get_current_admin_user)
 ):
     """Update system settings - Admin only"""
-    read_only_record = db.query(models.SyncState).filter(
-        models.SyncState.key == "enable_read_only_mode"
-    ).first()
-
-    value = "true" if settings_update.enable_read_only_mode else "false"
-
-    if read_only_record:
-        read_only_record.value = value
-    else:
-        read_only_record = models.SyncState(
-            key="enable_read_only_mode",
-            value=value
-        )
-        db.add(read_only_record)
-
+    _upsert_bool_setting(db, "enable_read_only_mode", settings_update.enable_read_only_mode)
+    _upsert_bool_setting(db, "enable_new_episode_button", settings_update.enable_new_episode_button)
     db.commit()
 
-    return {"enable_read_only_mode": settings_update.enable_read_only_mode}
+    return {
+        "enable_read_only_mode": settings_update.enable_read_only_mode,
+        "enable_new_episode_button": settings_update.enable_new_episode_button,
+    }

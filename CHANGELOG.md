@@ -2,6 +2,83 @@
 
 ---
 
+## [2.0.0-rc01] - 2026-05-12
+
+### Integrado desde fork `rrlarenas` (v1.9.0-rc08)
+
+Se integra la única funcionalidad del fork `rrlarenas` que aún no estaba presente
+en este repositorio: control administrativo de la visibilidad del botón
+"Nuevo Episodio". El resto de cambios documentados en el CHANGELOG del fork
+(rc01–rc07, 1.6.x, 1.5.x) ya estaban presentes en este árbol y se han verificado
+caso por caso. Quedan explícitamente fuera del integrado: la app Electron de
+escritorio, los instaladores Windows (`.bat` / `.ps1`), `central_mock/` y los
+scripts específicos de SQLite, por incompatibilidad con la arquitectura actual
+(Docker + PostgreSQL + React Native).
+
+#### Agregado
+
+##### Control de visibilidad del botón "Nuevo Episodio"
+- Nuevo parámetro de configuración global `enable_new_episode_button` controlado
+  exclusivamente por administradores.
+- El botón "Nuevo Episodio" en `EpisodesScreen` ahora se muestra u oculta según
+  el valor de este parámetro.
+- Por defecto el botón está oculto (`false`).
+- Los administradores pueden habilitarlo desde **Configuración → Configuración
+  del Sistema** en `UserSettingsModal`.
+
+##### Internacionalización de Configuración del Sistema
+- Nueva sección `systemSettings` en los archivos de traducción (`lang_es.ts`,
+  `lang_en.ts`).
+- Etiquetas y descripciones de ambos parámetros de sistema (`enable_read_only_mode`
+  y `enable_new_episode_button`) ahora son completamente traducibles.
+- El panel de administrador en `UserSettingsModal` utiliza las traducciones en
+  lugar de textos hardcodeados.
+
+#### Modificado
+
+##### Backend
+- `app/schemas.py`: agregado campo `enable_new_episode_button: bool = False` al
+  schema `SystemSettings`.
+- `app/routers/general.py`:
+  - `GET /settings`: ahora retorna también `enable_new_episode_button`.
+  - `PUT /settings` (solo administradores): ahora persiste también
+    `enable_new_episode_button` en la tabla `sync_state`.
+  - Refactorizado con funciones internas `_get_bool_setting` y
+    `_upsert_bool_setting` para eliminar duplicación.
+- No se requiere migración: la tabla `sync_state` es genérica clave/valor.
+
+##### Frontend (`frontend_ReactNativ/`)
+- `src/types/index.ts`: agregado campo `enable_new_episode_button` a la interfaz
+  `SystemSettings`.
+- `src/config/lang_es.ts` / `src/config/lang_en.ts`: nueva sección
+  `systemSettings` con `sectionTitle`, `readOnlyModeLabel` / `Desc`,
+  `newEpisodeButtonLabel` / `Desc`.
+- `src/components/UserSettingsModal.tsx`:
+  - Nuevo estado `enableNewEpisodeButton`.
+  - Se carga junto con `enable_read_only_mode` y se incluye en el diff/PUT a
+    `/settings`.
+  - Segundo `Switch` (solo admins) en la sección "Configuración del Sistema",
+    usando las nuevas claves i18n.
+  - Textos de la sección de sistema ahora usan `t.systemSettings.*`.
+- `src/screens/EpisodesScreen.tsx`:
+  - Nuevo `loadSystemSettings()` invocado en el mismo intervalo que
+    `loadSyncStats` (`EPISODES_REFRESH_INTERVAL`), para que los cambios del
+    administrador se propaguen sin esperar al siguiente login.
+  - El `TouchableOpacity` "+ Nuevo Episodio" se renderiza condicionalmente
+    cuando `enableNewEpisodeButton === true`. La lógica de deshabilitado por
+    `isReadOnlyMode` se conserva intacta.
+
+### Archivos modificados
+- `app/schemas.py`
+- `app/routers/general.py`
+- `frontend_ReactNativ/src/types/index.ts`
+- `frontend_ReactNativ/src/config/lang_es.ts`
+- `frontend_ReactNativ/src/config/lang_en.ts`
+- `frontend_ReactNativ/src/components/UserSettingsModal.tsx`
+- `frontend_ReactNativ/src/screens/EpisodesScreen.tsx`
+
+---
+
 ## [2.0-beta17] - 2026-05-06
 
 ### Agregado

@@ -175,3 +175,4 @@ class SyncStatus(BaseModel):
 
 class SystemSettings(BaseModel):
     enable_read_only_mode: bool = True
+    enable_new_episode_button: bool = False
