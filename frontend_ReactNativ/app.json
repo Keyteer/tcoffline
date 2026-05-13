@@ -13,12 +13,7 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "Permite a $(PRODUCT_NAME) reconocer voz para dictar texto en formularios clÃ­nicos.",
-        "NSMicrophoneUsageDescription": "Permite a $(PRODUCT_NAME) usar el micrÃ³fono para dictado por voz."
-      },
-      "bundleIdentifier": "com.anonymous.TcOffline"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -26,10 +21,7 @@
         "backgroundColor": "#ffffff"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.TcOffline",
-      "permissions": [
-        "android.permission.RECORD_AUDIO"
-      ]
+      "package": "com.anonymous.TcOffline"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,8 +31,8 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "Allows $(PRODUCT_NAME) to use the microphone for voice dictation.",
-          "speechRecognitionPermission": "Allows $(PRODUCT_NAME) to recognize speech for dictating text in clinical forms.",
+          "microphonePermission": "Permite a $(PRODUCT_NAME) usar el micrófono para dictado por voz.",
+          "speechRecognitionPermission": "Permite a $(PRODUCT_NAME) reconocer voz para dictar texto en formularios clínicos.",
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
           ]

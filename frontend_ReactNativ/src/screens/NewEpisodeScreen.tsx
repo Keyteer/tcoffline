@@ -10,6 +10,7 @@ import {
   Switch,
   Modal,
   FlatList,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +27,7 @@ import { localStore } from '../lib/localStore';
 import { outbox } from '../lib/outbox';
 import { formatRUT, getRUTError } from '../lib/rutValidation';
 import { parseSpokenDate, cleanSpokenRut, parseSpokenName, fuzzyMatchOption } from '../lib/speechParsers';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -59,6 +61,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [showSexPicker, setShowSexPicker] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [locationSearch, setLocationSearch] = useState('');
 
   // ----- Command mic (hands-free dictation) -----
@@ -329,6 +332,10 @@ export function NewEpisodeScreen({ navigation }: Props) {
     inputError: { borderColor: colors.error },
     inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
     inputRowField: { flex: 1, marginBottom: 0 },
+    datePickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 6 },
+    datePickerText: { fontSize: 16, color: colors.text },
+    datePickerPlaceholder: { fontSize: 16, color: colors.textTertiary },
+    datePickerIcon: { width: 20, height: 20, tintColor: colors.textSecondary },
     errorSmall: { color: colors.error, fontSize: 12, marginTop: -8, marginBottom: 8 },
     row: { flexDirection: 'row', gap: 12 },
     half: { flex: 1 },
@@ -547,19 +554,42 @@ export function NewEpisodeScreen({ navigation }: Props) {
               <View style={styles.half}>
                 <Text style={styles.label}>{t.newEpisode.birthDate}</Text>
                 <View style={styles.inputRow}>
-                  <TextInput
-                    style={[styles.input, styles.inputRowField]}
-                    value={birthDate}
-                    onChangeText={setBirthDate}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.textTertiary}
-                  />
+                  <TouchableOpacity
+                    style={[styles.input, styles.inputRowField, styles.datePickerButton]}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Image
+                      source={require('../../assets/Calendar.png')}
+                      style={styles.datePickerIcon}
+                      resizeMode="contain"
+                    />
+                    <Text style={birthDate ? styles.datePickerText : styles.datePickerPlaceholder}>
+                      {birthDate || 'YYYY-MM-DD'}
+                    </Text>
+                  </TouchableOpacity>
                   <MicButton
                     value={birthDate}
                     mode="replace"
                     onTranscript={(text) => setBirthDate(parseSpokenDate(text))}
                   />
                 </View>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={birthDate ? new Date(birthDate + 'T12:00:00') : new Date()}
+                    mode="date"
+                    display="default"
+                    maximumDate={new Date()}
+                    onChange={(_event, selected) => {
+                      setShowDatePicker(false);
+                      if (selected) {
+                        const y = selected.getFullYear();
+                        const m = String(selected.getMonth() + 1).padStart(2, '0');
+                        const d = String(selected.getDate()).padStart(2, '0');
+                        setBirthDate(`${y}-${m}-${d}`);
+                      }
+                    }}
+                  />
+                )}
               </View>
             </View>
 

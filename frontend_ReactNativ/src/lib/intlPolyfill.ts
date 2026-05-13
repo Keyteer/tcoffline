@@ -17,10 +17,85 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const g: any = globalThis as any;
 
+// Some RN deep-import modules use CommonJS (`module.exports = X`) and others
+// use ESM-style `export default X`. Resolve both shapes safely.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pickDefault = (mod: any) => (mod && mod.default ? mod.default : mod);
+
+// Wrap deep `react-native/Libraries/...` requires in try/catch: requiring them
+// at module-eval pulls in sub-modules that themselves touch globals (Blob,
+// WebSocket, etc.) and can throw on Hermes New Architecture before RN's
+// InitializeCore has run. Failing silently is preferable to a hard crash —
+// RN's own InitializeCore will install the real globals shortly after.
+// NOTE: Metro disallows dynamic `require(id)` calls, so each require must be
+// a literal string at the call site.
+const safeFormData = (): unknown => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return pickDefault(require('react-native/Libraries/Network/FormData'));
+  } catch {
+    return undefined;
+  }
+};
+const safeWebSocket = (): unknown => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return pickDefault(require('react-native/Libraries/WebSocket/WebSocket'));
+  } catch {
+    return undefined;
+  }
+};
+
 // ── 1. FormData ──────────────────────────────────────────────────────────────
 if (typeof g.FormData === 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  g.FormData = require('react-native/Libraries/Network/FormData').default;
+  const FD = safeFormData();
+  if (FD) g.FormData = FD;
+}
+
+// ── 1b. WebSocket ─────────────────────────────────────────────────────────────
+// Same New Architecture race as FormData: expo-dev-client and some Expo modules
+// access WebSocket at module-eval time before RN's JSI globals are installed.
+// We try to load RN's real implementation first; if its transitive imports
+// throw under Hermes New Architecture, fall back to an inert stub so bare
+// `WebSocket` references resolve. RN's InitializeCore will overwrite the
+// global with the real implementation shortly after.
+if (typeof g.WebSocket === 'undefined') {
+  const WS = safeWebSocket();
+  if (WS) {
+    g.WebSocket = WS;
+  } else {
+    class WebSocketStub {
+      static readonly CONNECTING = 0;
+      static readonly OPEN = 1;
+      static readonly CLOSING = 2;
+      static readonly CLOSED = 3;
+      readyState = 3;
+      url = '';
+      addEventListener() {}
+      removeEventListener() {}
+      send() {}
+      close() {}
+    }
+    g.WebSocket = WebSocketStub;
+  }
+}
+
+// ── 1c. setImmediate / clearImmediate ─────────────────────────────────────────
+// Hermes/New Architecture: timer globals may not be registered yet at
+// module-eval time in release builds. Fall back to setTimeout(fn, 0).
+if (typeof g.setImmediate === 'undefined') {
+  g.setImmediate = (fn: (...args: unknown[]) => void, ...args: unknown[]) =>
+    setTimeout(fn, 0, ...args);
+  g.clearImmediate = (id: ReturnType<typeof setTimeout>) => clearTimeout(id);
+}
+
+// ── 1d. window ────────────────────────────────────────────────────────────────
+// Some packages (including @react-native-community/datetimepicker) guard
+// web-only code with `typeof window !== 'undefined'` at module-eval time.
+// In Hermes New Architecture builds `window` is not yet aliased to `global`
+// when these modules initialise, causing a hard crash.
+if (typeof g.window === 'undefined') {
+  g.window = g;
 }
 
 // ── 2. performance.now ───────────────────────────────────────────────────────
