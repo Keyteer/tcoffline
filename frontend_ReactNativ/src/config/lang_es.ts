@@ -46,6 +46,18 @@ export const lang_es = {
     passwordPlaceholder: 'Ingrese su contraseña',
     loginButton: 'Ingresar',
     loginError: 'Usuario o contraseña incorrectos',
+    biometricLogin: 'Iniciar con {provider}',
+    biometricEnableTitle: 'Activar inicio biométrico',
+    biometricEnableMessage: '¿Desea iniciar sesión con {provider} la próxima vez?',
+    biometricEnable: 'Activar',
+    biometricNotNow: 'Ahora no',
+    biometricPromptLogin: 'Iniciar sesión con biometría',
+    biometricPromptEnable: 'Confirmar para activar inicio biométrico',
+    biometricLabelFaceId: 'Face ID',
+    biometricLabelTouchId: 'Touch ID',
+    biometricLabelFingerprint: 'Huella digital',
+    biometricLabelFacial: 'Reconocimiento facial',
+    biometricLabel: 'Biometría',
   },
 
   episodes: {

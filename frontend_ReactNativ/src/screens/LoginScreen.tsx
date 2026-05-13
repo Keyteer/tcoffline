@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useUser } from '../contexts/UserContext';
 import { api } from '../lib/api';
 import { auth } from '../lib/auth';
+import { biometrics } from '../lib/biometrics';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
@@ -34,7 +35,57 @@ export function LoginScreen({ navigation }: Props) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [biometricType, setBiometricType] = useState<import('../lib/biometrics').BiometricType | null>(null);
   const keyboardHeight = useKeyboardHeight();
+
+  useEffect(() => {
+    (async () => {
+      if (await biometrics.isAvailable() && await biometrics.hasStoredCredentials()) {
+        setBiometricType(await biometrics.getBiometricType());
+      }
+    })();
+  }, []);
+
+  const biometricLabel = biometricType ? t.login[biometricType] : null;
+
+  const doLogin = async (loginUsername: string, loginPassword: string) => {
+    const user = await api.verifyCredentials({ username: loginUsername, password: loginPassword });
+
+    await auth.setUser({
+      username: user.username,
+      role: user.role,
+    });
+
+    await refreshUser();
+
+    try {
+      const centralHealth = await api.getCentralHealth();
+      if (centralHealth.status === 'online') {
+        Alert.alert('', t.readOnlyMode.loginAlert);
+      }
+    } catch {
+      // Central not available, that's ok
+    }
+
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Episodes' }],
+    });
+  };
+
+  const handleBiometricLogin = async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const creds = await biometrics.authenticateAndLoad(t.login.biometricPromptLogin);
+      if (!creds) return; // user cancelled
+      await doLogin(creds.username, creds.password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.login.loginError);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!username || !password) return;
@@ -42,28 +93,30 @@ export function LoginScreen({ navigation }: Props) {
     setIsLoading(true);
 
     try {
-      const user = await api.verifyCredentials({ username, password });
-
-      await auth.setUser({
-        username: user.username,
-        role: user.role,
-      });
-
-      await refreshUser();
-
-      try {
-        const centralHealth = await api.getCentralHealth();
-        if (centralHealth.status === 'online') {
-          Alert.alert('', t.readOnlyMode.loginAlert);
-        }
-      } catch {
-        // Central not available, that's ok
+      await doLogin(username, password);
+      // Offer to enable biometrics after first successful password login
+      if (await biometrics.isAvailable() && !(await biometrics.hasStoredCredentials())) {
+        const type = await biometrics.getBiometricType();
+        const label = t.login[type];
+        Alert.alert(
+          t.login.biometricEnableTitle.replace('{provider}', label),
+          t.login.biometricEnableMessage.replace('{provider}', label),
+          [
+            { text: t.login.biometricNotNow, style: 'cancel' },
+            {
+              text: t.login.biometricEnable,
+              onPress: async () => {
+                await biometrics.enableWithPrompt(
+                  username,
+                  password,
+                  t.login.biometricPromptEnable,
+                );
+                setBiometricType(type);
+              },
+            },
+          ],
+        );
       }
-
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Episodes' }],
-      });
     } catch (err) {
       setError(err instanceof Error ? err.message : t.login.loginError);
     } finally {
@@ -321,6 +374,18 @@ export function LoginScreen({ navigation }: Props) {
               <Text style={styles.buttonText}>{t.login.loginButton}</Text>
             )}
           </TouchableOpacity>
+
+          {biometricLabel && (
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleBiometricLogin}
+              disabled={isLoading}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {t.login.biometricLogin.replace('{provider}', biometricLabel)}
+              </Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.secondaryButton}

@@ -7,11 +7,17 @@
 ### ================================================================
 
 @tcBaseUrl = http://demo01.tcdb.vtas.cl.intersystems.com
-@endpoint  = /demo01/tcoffline/hl7inbound
+@endpoint  = /demo01/tcoffline
 # base64("demo:demodemo")
 @auth      = Basic ZGVtbzpkZW1vZGVtbw==
 
-POST {{tcBaseUrl}}{{endpoint}}
+GET {{tcBaseUrl}}{{endpoint}}/getData
+Authorization: {{auth}}
+
+GET {{tcBaseUrl}}{{endpoint}}/getDataTest
+Authorization: {{auth}}
+
+POST {{tcBaseUrl}}{{endpoint}}/hl7inbound
 Authorization: {{auth}}
 Content-Type: application/json
 

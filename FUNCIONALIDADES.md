@@ -133,6 +133,7 @@ La documentación completa de todos los endpoints HTTP — contratos, parámetro
   - POST a `/apirest/externos/hl7inbound`
   - Reintentos automáticos (máx 5)
   - Actualización de IDs con respuesta del servidor
+  > **Nota:** Servidor central actualmente no guarda Motivo de consulta
 - **Central → Local (Downstream):**
   - Descarga de episodios cada 60 segundos
   - GET desde `/apirest/externos/obtenerDatos`

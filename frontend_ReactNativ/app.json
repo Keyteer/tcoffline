@@ -47,7 +47,13 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permite a $(PRODUCT_NAME) usar Face ID para iniciar sesión."
+        }
+      ]
     ]
   }
 }

@@ -49,6 +49,18 @@ export const lang_en: TranslationKeys = {
     passwordPlaceholder: 'Enter your password',
     loginButton: 'Login',
     loginError: 'Invalid username or password',
+    biometricLogin: 'Sign in with {provider}',
+    biometricEnableTitle: 'Enable biometric login',
+    biometricEnableMessage: 'Sign in with {provider} next time?',
+    biometricEnable: 'Enable',
+    biometricNotNow: 'Not now',
+    biometricPromptLogin: 'Sign in with biometrics',
+    biometricPromptEnable: 'Confirm to enable biometric login',
+    biometricLabelFaceId: 'Face ID',
+    biometricLabelTouchId: 'Touch ID',
+    biometricLabelFingerprint: 'Fingerprint',
+    biometricLabelFacial: 'Face recognition',
+    biometricLabel: 'Biometrics',
   },
 
   episodes: {
