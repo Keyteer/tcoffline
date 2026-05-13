@@ -1,11 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, StyleSheet, View, Image } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
+import { Mic } from 'react-native-feather';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { parseCommandTranscript, type CommandVocab } from '../lib/speechParsers';
-
-const micIcon = require('../../assets/Microfone.png');
 
 interface CommandMicButtonProps<F extends string> {
   /** Vocabulary mapping field id -> spoken aliases. */
@@ -122,8 +121,6 @@ export function CommandMicButton<F extends string>({
     icon: {
       width: size,
       height: size,
-      tintColor: iconTint,
-      resizeMode: 'contain',
     },
     pulseDot: {
       position: 'absolute',
@@ -149,7 +146,7 @@ export function CommandMicButton<F extends string>({
         onPress={handlePress}
         disabled={disabled || isUnsupported}
       >
-        <Image source={micIcon} style={styles.icon} />
+        <Mic width={(size * 2) / 3} height={size} color={iconTint} />
         {isListening ? <View style={styles.pulseDot} /> : null}
       </TouchableOpacity>
     </View>

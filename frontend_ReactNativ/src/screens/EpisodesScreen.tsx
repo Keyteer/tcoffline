@@ -7,7 +7,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   RefreshControl,
+  TextInput,
 } from 'react-native';
+import { ArrowLeft, Search, X } from 'react-native-feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
@@ -42,6 +44,20 @@ export function EpisodesScreen({ navigation }: Props) {
   const [syncStats, setSyncStats] = useState<SyncStats | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [enableNewEpisodeButton, setEnableNewEpisodeButton] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  const filterEpisodes = (list: Episode[], query: string): Episode[] => {
+    const q = query.toLowerCase().trim();
+    if (!q) return list;
+    return list.filter((e) => {
+      const fields = [
+        e.paciente, e.run, e.mrn, e.num_episodio?.toString(),
+        e.motivo_consulta, e.ubicacion, e.habitacion, e.cama,
+      ];
+      return fields.some((f) => f?.toLowerCase().includes(q));
+    });
+  };
 
   const loadAllEpisodes = useCallback(async () => {
     // Build pseudo-Episode entries from the device-side outbox so that
@@ -164,12 +180,13 @@ export function EpisodesScreen({ navigation }: Props) {
   }, [lastReplayAt, loadAllEpisodes, loadSyncStats]);
 
   useEffect(() => {
-    if (activeTab) {
-      setEpisodes(allEpisodes.filter((e) => e.tipo === activeTab));
-    } else {
-      setEpisodes(allEpisodes);
-    }
-  }, [activeTab, allEpisodes]);
+    const base = searchQuery.trim()
+      ? allEpisodes
+      : activeTab
+        ? allEpisodes.filter((e) => e.tipo === activeTab)
+        : allEpisodes;
+    setEpisodes(filterEpisodes(base, searchQuery));
+  }, [activeTab, allEpisodes, searchQuery]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -273,6 +290,37 @@ export function EpisodesScreen({ navigation }: Props) {
       fontSize: 16,
       paddingVertical: 48,
     },
+    titleActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    searchIconButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 10,
+    },
+    searchBar: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      marginLeft: 4,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.text,
+      paddingVertical: 8,
+      paddingHorizontal: 4,
+    },
+    clearButton: {
+      paddingHorizontal: 6,
+      paddingVertical: 10,
+    },
   });
 
   return (
@@ -281,15 +329,49 @@ export function EpisodesScreen({ navigation }: Props) {
 
       <View style={styles.content}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{t.episodes.title}</Text>
-          {enableNewEpisodeButton && (
-            <TouchableOpacity
-              style={[styles.newButton, isReadOnlyMode && styles.newButtonDisabled]}
-              onPress={() => navigation.navigate('NewEpisode')}
-              disabled={isReadOnlyMode}
-            >
-              <Text style={styles.newButtonText}>+ {t.episodes.newEpisode}</Text>
-            </TouchableOpacity>
+          {isSearching ? (
+            <>
+              <TouchableOpacity
+                onPress={() => { setIsSearching(false); setSearchQuery(''); }}
+                style={styles.searchIconButton}
+              >
+                <ArrowLeft width={20} height={20} color={colors.primary} />
+              </TouchableOpacity>
+              <View style={styles.searchBar}>
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder={t.episodes.searchPlaceholder}
+                  placeholderTextColor={colors.textTertiary}
+                  autoFocus
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+                    <X width={16} height={16} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.title}>{t.episodes.title}</Text>
+              <View style={styles.titleActions}>
+                <TouchableOpacity onPress={() => setIsSearching(true)} style={styles.searchIconButton}>
+                  <Search width={20} height={20} color={colors.text} />
+                </TouchableOpacity>
+                {enableNewEpisodeButton && (
+                  <TouchableOpacity
+                    style={[styles.newButton, isReadOnlyMode && styles.newButtonDisabled]}
+                    onPress={() => navigation.navigate('NewEpisode')}
+                    disabled={isReadOnlyMode}
+                  >
+                    <Text style={styles.newButtonText}>+ {t.episodes.newEpisode}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </>
           )}
         </View>
 
@@ -302,7 +384,7 @@ export function EpisodesScreen({ navigation }: Props) {
 
         {syncStats && <SyncPipeline syncStats={syncStats} />}
 
-        {availableTabs.length > 0 && (
+        {availableTabs.length > 0 && !isSearching && (
           <View style={styles.tabsRow}>
             {availableTabs.map((tab) => (
               <TouchableOpacity

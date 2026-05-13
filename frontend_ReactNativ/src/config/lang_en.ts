@@ -66,6 +66,7 @@ export const lang_en: TranslationKeys = {
     sync: 'Sync',
     noEpisodes: 'No episodes available',
     noEpisodesInCategory: 'No episodes in this category',
+    searchPlaceholder: 'Search by name, RUN, MRN...',
     loadingEpisodes: 'Loading episodes...',
     syncStatus: {
       online: 'Online',

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Check, Clock, CloudOff } from 'react-native-feather';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { Episode } from '../types';
@@ -72,7 +73,7 @@ export function EpisodeRow({ episode, onPress }: Props) {
     syncedBg: { backgroundColor: colors.successLight },
     pendingBg: { backgroundColor: colors.warningLight },
     localBg: { backgroundColor: colors.errorLight },
-    syncText: { fontSize: 11, fontWeight: '600', marginLeft: 4 },
+    syncText: { fontSize: 11, fontWeight: '600' },
     syncedText: { color: colors.success },
     pendingText: { color: colors.warning },
     localText: { color: colors.error },
@@ -104,16 +105,20 @@ export function EpisodeRow({ episode, onPress }: Props) {
         </View>
         {isLocal ? (
           <View style={[styles.syncBadge, styles.localBg]}>
+            <CloudOff width={11} height={11} color={colors.error} />
             <Text style={[styles.syncText, styles.localText]}>
-              {`⊘ ${t.episodes.syncStatus.local}`}
+              {` ${t.episodes.syncStatus.local}`}
             </Text>
           </View>
         ) : (
           <View style={[styles.syncBadge, episode.synced_flag && !hasUnsynedNotes ? styles.syncedBg : styles.pendingBg]}>
+            {episode.synced_flag && !hasUnsynedNotes
+              ? <Check width={11} height={11} color={colors.success} />
+              : <Clock width={11} height={11} color={colors.warning} />}
             <Text style={[styles.syncText, episode.synced_flag && !hasUnsynedNotes ? styles.syncedText : styles.pendingText]}>
               {episode.synced_flag && !hasUnsynedNotes
-                ? `✓ ${t.episodes.syncStatus.synced}`
-                : `⏱ ${t.episodes.syncStatus.pendingCount}${hasUnsynedNotes ? ` (${episode.pending_notes_count})` : ''}`}
+                ? ` ${t.episodes.syncStatus.synced}`
+                : ` ${t.episodes.syncStatus.pendingCount}${hasUnsynedNotes ? ` (${episode.pending_notes_count})` : ''}`}
             </Text>
           </View>
         )}

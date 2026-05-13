@@ -63,6 +63,7 @@ export const lang_es = {
     sync: 'Sincronización',
     noEpisodes: 'No hay episodios disponibles',
     noEpisodesInCategory: 'No hay episodios en esta categoría',
+    searchPlaceholder: 'Buscar por nombre, RUN, MRN...',
     loadingEpisodes: 'Cargando episodios...',
     syncStatus: {
       online: 'Conectado',

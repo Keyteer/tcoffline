@@ -7,6 +7,7 @@ import {
   Modal,
   StyleSheet,
 } from 'react-native';
+import { X, ChevronUp, ChevronDown } from 'react-native-feather';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { EpisodeData, ResultadoHistorico, RegistroOffline } from '../types';
@@ -129,7 +130,7 @@ export function PatientHistoryModal({ visible, onClose, episodeData }: Props) {
       borderRadius: 10,
     },
     countBadgeText: { fontSize: 11, fontWeight: '600' },
-    chevron: { fontSize: 14, color: colors.textSecondary },
+    chevron: { color: colors.textSecondary },
     sectionContent: { paddingHorizontal: 14, paddingBottom: 14 },
     emptyText: { textAlign: 'center', color: colors.textSecondary, paddingVertical: 8, fontSize: 13 },
     // Allergy
@@ -271,7 +272,7 @@ export function PatientHistoryModal({ visible, onClose, episodeData }: Props) {
             <View style={styles.header}>
               <Text style={styles.headerTitle}>{t.patientHistory.title}</Text>
               <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                <Text style={styles.closeText}>✕</Text>
+                <X width={22} height={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -289,7 +290,7 @@ export function PatientHistoryModal({ visible, onClose, episodeData }: Props) {
                       </View>
                     )}
                   </View>
-                  <Text style={styles.chevron}>{expandedSection === 'allergies' ? '▲' : '▼'}</Text>
+                  {expandedSection === 'allergies' ? <ChevronUp width={16} height={16} color={colors.textSecondary} /> : <ChevronDown width={16} height={16} color={colors.textSecondary} />}
                 </TouchableOpacity>
                 {expandedSection === 'allergies' && (
                   <View style={styles.sectionContent}>
@@ -338,7 +339,7 @@ export function PatientHistoryModal({ visible, onClose, episodeData }: Props) {
                       </View>
                     )}
                   </View>
-                  <Text style={styles.chevron}>{expandedSection === 'records' ? '▲' : '▼'}</Text>
+                  {expandedSection === 'records' ? <ChevronUp width={16} height={16} color={colors.textSecondary} /> : <ChevronDown width={16} height={16} color={colors.textSecondary} />}
                 </TouchableOpacity>
                 {expandedSection === 'records' && (
                   <View style={styles.sectionContent}>
@@ -375,7 +376,7 @@ export function PatientHistoryModal({ visible, onClose, episodeData }: Props) {
                       </View>
                     )}
                   </View>
-                  <Text style={styles.chevron}>{expandedSection === 'encounters' ? '▲' : '▼'}</Text>
+                  {expandedSection === 'encounters' ? <ChevronUp width={16} height={16} color={colors.textSecondary} /> : <ChevronDown width={16} height={16} color={colors.textSecondary} />}
                 </TouchableOpacity>
                 {expandedSection === 'encounters' && (
                   <View style={styles.sectionContent}>
@@ -451,7 +452,7 @@ export function PatientHistoryModal({ visible, onClose, episodeData }: Props) {
                       </View>
                     )}
                   </View>
-                  <Text style={styles.chevron}>{expandedSection === 'labs' ? '▲' : '▼'}</Text>
+                  {expandedSection === 'labs' ? <ChevronUp width={16} height={16} color={colors.textSecondary} /> : <ChevronDown width={16} height={16} color={colors.textSecondary} />}
                 </TouchableOpacity>
                 {expandedSection === 'labs' && (
                   <View style={styles.sectionContent}>
@@ -520,7 +521,7 @@ export function PatientHistoryModal({ visible, onClose, episodeData }: Props) {
             <View style={styles.noteModalHeader}>
               <Text style={styles.noteModalTitle}>{t.patientHistory.noteDetails}</Text>
               <TouchableOpacity onPress={() => setSelectedNota(null)}>
-                <Text style={styles.closeText}>✕</Text>
+                <X width={22} height={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.noteModalContent}>

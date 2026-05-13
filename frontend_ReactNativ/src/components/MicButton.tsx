@@ -1,10 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { TouchableOpacity, StyleSheet, View, Image } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
+import { Mic } from 'react-native-feather';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-
-const micIcon = require('../../assets/Microfone.png');
 
 export type MicButtonMode = 'replace' | 'append';
 
@@ -113,8 +112,6 @@ export function MicButton({
     icon: {
       width: size,
       height: size,
-      tintColor: iconTint,
-      resizeMode: 'contain',
     },
     pulseDot: {
       position: 'absolute',
@@ -140,7 +137,7 @@ export function MicButton({
         onPress={handlePress}
         disabled={disabled || isUnsupported}
       >
-        <Image source={micIcon} style={styles.icon} />
+        <Mic width={(size * 2) / 3} height={size} color={iconTint} />
         {isListening ? <View style={styles.pulseDot} /> : null}
       </TouchableOpacity>
     </View>

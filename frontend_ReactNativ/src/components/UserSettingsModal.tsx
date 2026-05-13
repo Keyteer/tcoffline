@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Pressable,
 } from 'react-native';
+import { X } from 'react-native-feather';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
 import { api } from '../lib/api';
@@ -218,7 +219,6 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
       borderColor: colors.borderSecondary,
     },
     logoutText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
-    closeText: { fontSize: 22, color: colors.textSecondary },
     tabBar: {
       flexDirection: 'row',
       borderBottomWidth: 1,
@@ -370,7 +370,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                 <Text style={styles.logoutText}>{t.header.logout}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={handleClose}>
-                <Text style={styles.closeText}>✕</Text>
+                <X width={22} height={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
@@ -569,7 +569,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                           setError('');
                         }}
                       >
-                        <Text style={styles.closeText}>✕</Text>
+                        <X width={22} height={22} color={colors.textSecondary} />
                       </TouchableOpacity>
                     </View>
 

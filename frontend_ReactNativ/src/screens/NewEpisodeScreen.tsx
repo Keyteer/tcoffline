@@ -10,8 +10,8 @@ import {
   Switch,
   Modal,
   FlatList,
-  Image,
 } from 'react-native';
+import { ArrowLeft, Calendar, ChevronDown } from 'react-native-feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
@@ -335,7 +335,6 @@ export function NewEpisodeScreen({ navigation }: Props) {
     datePickerButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 6 },
     datePickerText: { fontSize: 16, color: colors.text },
     datePickerPlaceholder: { fontSize: 16, color: colors.textTertiary },
-    datePickerIcon: { width: 20, height: 20, tintColor: colors.textSecondary },
     errorSmall: { color: colors.error, fontSize: 12, marginTop: -8, marginBottom: 8 },
     row: { flexDirection: 'row', gap: 12 },
     half: { flex: 1 },
@@ -354,7 +353,6 @@ export function NewEpisodeScreen({ navigation }: Props) {
       marginBottom: 12,
     },
     pickerButtonText: { fontSize: 16, color: colors.text },
-    pickerChevron: { fontSize: 14, color: colors.textTertiary },
     textarea: { minHeight: 80, textAlignVertical: 'top' },
     errorBox: {
       backgroundColor: colors.errorLight,
@@ -461,7 +459,8 @@ export function NewEpisodeScreen({ navigation }: Props) {
         onTouchStart={() => stopActiveSpeechRecognition()}
       >
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backText}>← {t.newEpisode.backToEpisodes}</Text>
+            <ArrowLeft width={16} height={16} color={colors.primary} />
+            <Text style={styles.backText}>{t.newEpisode.backToEpisodes}</Text>
           </TouchableOpacity>
 
           <Text style={styles.title}>{t.newEpisode.titlePatient}</Text>
@@ -548,7 +547,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
                   <Text style={styles.pickerButtonText}>
                     {sexOptions.find((o) => o.value === sex)?.label || sex}
                   </Text>
-                  <Text style={styles.pickerChevron}>▼</Text>
+                  <ChevronDown width={14} height={14} color={colors.textTertiary} />
                 </TouchableOpacity>
               </View>
               <View style={styles.half}>
@@ -558,11 +557,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
                     style={[styles.input, styles.inputRowField, styles.datePickerButton]}
                     onPress={() => setShowDatePicker(true)}
                   >
-                    <Image
-                      source={require('../../assets/Calendar.png')}
-                      style={styles.datePickerIcon}
-                      resizeMode="contain"
-                    />
+                    <Calendar width={20} height={20} color={colors.textSecondary} />
                     <Text style={birthDate ? styles.datePickerText : styles.datePickerPlaceholder}>
                       {birthDate || 'YYYY-MM-DD'}
                     </Text>
@@ -607,7 +602,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
               <Text style={styles.pickerButtonText}>
                 {episodeType || t.newEpisode.noEpisodeTypes}
               </Text>
-              <Text style={styles.pickerChevron}>▼</Text>
+              <ChevronDown width={14} height={14} color={colors.textTertiary} />
             </TouchableOpacity>
 
             <Text style={styles.label}>{t.newEpisode.roomBox}</Text>
@@ -638,7 +633,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
               {isLoadingLocations ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={styles.pickerChevron}>▼</Text>
+                <ChevronDown width={14} height={14} color={colors.textTertiary} />
               )}
             </TouchableOpacity>
 

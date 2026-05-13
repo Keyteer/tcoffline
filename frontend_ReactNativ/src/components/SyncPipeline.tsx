@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { X } from 'react-native-feather';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
@@ -121,12 +122,6 @@ export function SyncPipeline({ syncStats }: Props) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    xText: {
-      color: colors.error,
-      fontSize: 12,
-      fontWeight: '900',
-      lineHeight: 14,
-    },
     linkCaption: {
       marginTop: 14,
       fontSize: 10,
@@ -141,7 +136,7 @@ export function SyncPipeline({ syncStats }: Props) {
       <View style={[styles.line, ok ? styles.lineOk : styles.lineDown]} />
       {!ok && (
         <View style={styles.xMark}>
-          <Text style={styles.xText}>✕</Text>
+          <X width={10} height={10} color={colors.error} />
         </View>
       )}
       {!!badgeText && (

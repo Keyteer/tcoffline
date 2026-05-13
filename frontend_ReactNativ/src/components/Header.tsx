@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { Sun, Moon } from 'react-native-feather';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -89,7 +90,6 @@ export function Header({ navigation }: Props) {
     },
     langText: { fontSize: 12, fontWeight: '700', color: colors.text },
     themeButton: { padding: 8, marginRight: 'auto' },
-    themeText: { fontSize: 18 },
     userButton: { paddingHorizontal: 8, paddingVertical: 4 },
     userName: { fontSize: 13, fontWeight: '500', color: colors.text },
     userRole: { fontSize: 11, color: colors.textSecondary },
@@ -181,7 +181,9 @@ export function Header({ navigation }: Props) {
             </View>
 
             <TouchableOpacity style={styles.themeButton} onPress={toggleTheme}>
-              <Text style={styles.themeText}>{theme === 'dark' ? '☀️' : '🌙'}</Text>
+              {theme === 'dark'
+                ? <Sun width={18} height={18} color={colors.text} />
+                : <Moon width={18} height={18} color={colors.text} />}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.userButton} onPress={() => setShowSettings(true)}>

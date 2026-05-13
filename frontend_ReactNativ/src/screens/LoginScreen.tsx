@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
+import { X, Check, Info } from 'react-native-feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -198,10 +199,6 @@ export function LoginScreen({ navigation }: Props) {
       elevation: 2,
       zIndex: 10,
     },
-    infoButtonText: {
-      fontSize: 16,
-      color: colors.textSecondary,
-    },
     // Sidebar overlay and panel
     overlay: {
       position: 'absolute',
@@ -244,12 +241,8 @@ export function LoginScreen({ navigation }: Props) {
     featureItem: {
       flexDirection: 'row',
       alignItems: 'flex-start',
+      gap: 8,
       marginBottom: 8,
-    },
-    featureCheck: {
-      color: colors.primary,
-      marginRight: 8,
-      fontSize: 14,
     },
     featureText: {
       fontSize: 13,
@@ -272,10 +265,6 @@ export function LoginScreen({ navigation }: Props) {
       padding: 4,
       marginBottom: 8,
     },
-    closeSidebarText: {
-      fontSize: 22,
-      color: colors.textSecondary,
-    },
   });
 
   return (
@@ -284,7 +273,7 @@ export function LoginScreen({ navigation }: Props) {
         style={styles.infoButton}
         onPress={() => setSidebarOpen(true)}
       >
-        <Text style={styles.infoButtonText}>ℹ</Text>
+        <Info width={16} height={16} color={colors.textSecondary} />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: keyboardHeight }]} keyboardShouldPersistTaps="handled">
@@ -354,7 +343,7 @@ export function LoginScreen({ navigation }: Props) {
           <View style={styles.sidebar}>
             <ScrollView showsVerticalScrollIndicator={false}>
               <TouchableOpacity style={styles.closeSidebar} onPress={() => setSidebarOpen(false)}>
-                <Text style={styles.closeSidebarText}>✕</Text>
+                <X width={22} height={22} color={colors.textSecondary} />
               </TouchableOpacity>
               <Text style={styles.sidebarTitle}>TrakCare Offline</Text>
               <Text style={styles.sidebarSubtitle}>Sistema de Contingencia Clínica</Text>
@@ -367,7 +356,7 @@ export function LoginScreen({ navigation }: Props) {
                 'Control de pacientes y episodios',
               ].map((feat, idx) => (
                 <View key={idx} style={styles.featureItem}>
-                  <Text style={styles.featureCheck}>✓</Text>
+                  <Check width={14} height={14} color={colors.success} />
                   <Text style={styles.featureText}>{feat}</Text>
                 </View>
               ))}

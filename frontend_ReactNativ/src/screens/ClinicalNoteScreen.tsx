@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
+import { ArrowLeft, CloudOff } from 'react-native-feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
@@ -435,7 +436,8 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
           onTouchStart={() => stopActiveSpeechRecognition()}
         >
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Episodes')}>
-            <Text style={styles.backText}>← {t.clinicalNote.backToEpisodes}</Text>
+            <ArrowLeft width={16} height={16} color={colors.primary} />
+            <Text style={styles.backText}>{t.clinicalNote.backToEpisodes}</Text>
           </TouchableOpacity>
 
           <View style={styles.headerRow}>
@@ -528,7 +530,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
                     ? styles.noteBadgeTextSynced
                     : styles.noteBadgeTextPending;
                 const badgeLabel = isLocalNote
-                  ? `⊘ ${t.episodes.syncStatus.local}`
+                  ? t.episodes.syncStatus.local
                   : note.synced_flag
                     ? t.clinicalNote.sent
                     : t.clinicalNote.pending;
@@ -540,6 +542,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
                     <Text style={styles.noteDate}>{formatDateTime(note.created_at)}</Text>
                     <Text style={styles.noteDot}>•</Text>
                     <View style={[styles.noteBadge, badgeStyle]}>
+                      {isLocalNote && <CloudOff width={10} height={10} color={colors.error} style={{ marginRight: 3 }} />}
                       <Text style={[styles.noteBadgeText, badgeTextStyle]}>
                         {badgeLabel}
                       </Text>
