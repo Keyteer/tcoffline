@@ -52,7 +52,7 @@ export function EpisodesScreen({ navigation }: Props) {
     if (!q) return list;
     return list.filter((e) => {
       const fields = [
-        e.paciente, e.run, e.mrn, e.num_episodio?.toString(),
+        e.paciente, e.run, e.mrn, e.num_episodio,
         e.motivo_consulta, e.ubicacion, e.habitacion, e.cama,
       ];
       return fields.some((f) => f?.toLowerCase().includes(q));

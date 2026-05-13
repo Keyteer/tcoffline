@@ -280,7 +280,7 @@ export function LoginScreen({ navigation }: Props) {
         <View style={styles.card}>
           <Text style={styles.title}>{t.login.title}</Text>
           <Text style={styles.subtitle}>
-            {language === 'es' ? 'Ingrese sus credenciales para continuar' : 'Enter your credentials to continue'}
+            {t.login.subtitle}
           </Text>
 
           <Text style={styles.label}>{t.login.username}</Text>
@@ -288,7 +288,7 @@ export function LoginScreen({ navigation }: Props) {
             style={styles.input}
             value={username}
             onChangeText={setUsername}
-            placeholder={language === 'es' ? 'Ingrese su usuario' : 'Enter your username'}
+            placeholder={t.login.usernamePlaceholder}
             placeholderTextColor={colors.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
@@ -299,7 +299,7 @@ export function LoginScreen({ navigation }: Props) {
             style={styles.input}
             value={password}
             onChangeText={setPassword}
-            placeholder={language === 'es' ? 'Ingrese su contraseña' : 'Enter your password'}
+            placeholder={t.login.passwordPlaceholder}
             placeholderTextColor={colors.textTertiary}
             secureTextEntry
           />

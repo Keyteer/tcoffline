@@ -85,7 +85,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
     setSuccess('');
 
     if (!newUsername || !newPassword) {
-      setError(t.userSettings.saveError || 'Usuario y contraseña son requeridos');
+      setError(t.userSettings.credentialsRequired);
       return;
     }
 
@@ -97,7 +97,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
         nombre: newNombre || undefined,
         is_admin: newIsAdmin,
       });
-      setSuccess('Usuario creado correctamente');
+      setSuccess(t.userSettings.createUserSuccess);
       setNewUsername('');
       setNewPassword('');
       setNewNombre('');
@@ -105,7 +105,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
       setShowCreateUser(false);
       loadUsers();
     } catch (err: any) {
-      setError(err.message || 'Error al crear usuario');
+      setError(err.message || t.userSettings.createUserError);
     } finally {
       setIsSubmitting(false);
     }
@@ -116,7 +116,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
     setSuccess('');
 
     if (password && password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError(t.userSettings.passwordsNoMatch);
       return;
     }
 
@@ -141,7 +141,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
       }
 
       if (!hasUserChanges && !hasSystemChanges) {
-        setError('No hay cambios para guardar');
+        setError(t.userSettings.noChanges);
         setIsSubmitting(false);
         return;
       }
@@ -159,7 +159,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
         });
       }
 
-      setSuccess(t.userSettings.saveSuccess || 'Configuración actualizada correctamente');
+      setSuccess(t.userSettings.saveSuccess);
       setPassword('');
       setConfirmPassword('');
 
@@ -176,7 +176,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
         setSuccess('');
       }, 1500);
     } catch (err: any) {
-      setError(err.message || t.userSettings.saveError || 'Error al actualizar');
+      setError(err.message || t.userSettings.saveError);
     } finally {
       setIsSubmitting(false);
     }
@@ -383,7 +383,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                 onPress={() => setActiveTab('settings')}
               >
                 <Text style={[styles.tabText, activeTab === 'settings' && styles.tabTextActive]}>
-                  Configuración
+                  {t.userSettings.tabSettings}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -391,7 +391,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                 onPress={() => setActiveTab('users')}
               >
                 <Text style={[styles.tabText, activeTab === 'users' && styles.tabTextActive]}>
-                  Gestión de Usuarios
+                  {t.userSettings.tabUsers}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -405,47 +405,47 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
           >
             {activeTab === 'settings' && (
               <>
-                <Text style={styles.label}>Usuario</Text>
+                <Text style={styles.label}>{t.userSettings.usernameLabel}</Text>
                 <TextInput
                   style={[styles.input, styles.inputDisabled]}
                   value={user.username}
                   editable={false}
                 />
 
-                <Text style={styles.label}>Nombre Completo</Text>
+                <Text style={styles.label}>{t.userSettings.fullNameLabel}</Text>
                 <TextInput
                   style={styles.input}
                   value={nombre}
                   onChangeText={setNombre}
-                  placeholder="Tu nombre completo"
+                  placeholder={t.userSettings.fullNamePlaceholder}
                   placeholderTextColor={colors.textTertiary}
                   editable={!isSubmitting}
                 />
-                <Text style={styles.hint}>Este nombre se registrará cuando crees notas clínicas</Text>
+                <Text style={styles.hint}>{t.userSettings.fullNameHint}</Text>
 
-                <Text style={styles.label}>Nueva Contraseña</Text>
+                <Text style={styles.label}>{t.userSettings.newPasswordLabel}</Text>
                 <TextInput
                   style={styles.input}
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="Dejar en blanco para no cambiar"
+                  placeholder={t.userSettings.newPasswordPlaceholder}
                   placeholderTextColor={colors.textTertiary}
                   secureTextEntry
                   editable={!isSubmitting}
                 />
 
-                <Text style={styles.label}>Confirmar Contraseña</Text>
+                <Text style={styles.label}>{t.userSettings.confirmPasswordLabel}</Text>
                 <TextInput
                   style={styles.input}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
-                  placeholder="Repetir nueva contraseña"
+                  placeholder={t.userSettings.confirmPasswordPlaceholder}
                   placeholderTextColor={colors.textTertiary}
                   secureTextEntry
                   editable={!isSubmitting}
                 />
 
-                <Text style={styles.label}>Filtros API</Text>
+                <Text style={styles.label}>{t.userSettings.apiFiltersLabel}</Text>
                 <TextInput
                   style={styles.input}
                   value={filtros}
@@ -454,7 +454,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                   placeholderTextColor={colors.textTertiary}
                   editable={!isSubmitting}
                 />
-                <Text style={styles.hint}>Parámetros de consulta para el endpoint obtenerDatos</Text>
+                <Text style={styles.hint}>{t.userSettings.apiFiltersHint}</Text>
 
                 {user.is_admin && (
                   <View style={styles.adminSection}>
@@ -509,7 +509,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
 
                 <View style={styles.buttonRow}>
                   <TouchableOpacity style={styles.cancelButton} onPress={handleClose} disabled={isSubmitting}>
-                    <Text style={styles.cancelButtonText}>Cancelar</Text>
+                    <Text style={styles.cancelButtonText}>{t.common.cancel}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.saveButton, isSubmitting && { opacity: 0.6 }]}
@@ -519,7 +519,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                     {isSubmitting ? (
                       <ActivityIndicator color="#FFF" size="small" />
                     ) : (
-                      <Text style={styles.saveButtonText}>Guardar</Text>
+                      <Text style={styles.saveButtonText}>{t.common.save}</Text>
                     )}
                   </TouchableOpacity>
                 </View>
@@ -531,7 +531,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
             {activeTab === 'users' && user.is_admin && (
               <>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 12 }}>
-                  Usuarios del Sistema
+                  {t.userSettings.systemUsersTitle}
                 </Text>
 
                 <View style={{ backgroundColor: colors.surfaceSecondary, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
@@ -541,24 +541,24 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                         <Text style={styles.userName}>{u.username}</Text>
                         {u.is_admin && (
                           <View style={styles.adminBadge}>
-                            <Text style={styles.adminBadgeText}>Administrador</Text>
+                            <Text style={styles.adminBadgeText}>{t.userSettings.adminBadge}</Text>
                           </View>
                         )}
                       </View>
                       {u.nombre && <Text style={styles.userNombre}>{u.nombre}</Text>}
-                      <Text style={styles.userStatus}>Estado: {u.active ? 'Activo' : 'Inactivo'}</Text>
+                      <Text style={styles.userStatus}>{t.userSettings.statusLabel}: {u.active ? t.userSettings.statusActive : t.userSettings.statusInactive}</Text>
                     </View>
                   ))}
                 </View>
 
                 {!showCreateUser ? (
                   <TouchableOpacity style={styles.createUserButton} onPress={() => setShowCreateUser(true)}>
-                    <Text style={styles.createUserButtonText}>Crear Nuevo Usuario</Text>
+                    <Text style={styles.createUserButtonText}>{t.userSettings.createUserButton}</Text>
                   </TouchableOpacity>
                 ) : (
                   <View style={styles.createUserForm}>
                     <View style={styles.createUserHeader}>
-                      <Text style={styles.createUserTitle}>Nuevo Usuario</Text>
+                      <Text style={styles.createUserTitle}>{t.userSettings.newUserTitle}</Text>
                       <TouchableOpacity
                         onPress={() => {
                           setShowCreateUser(false);
@@ -573,42 +573,42 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                       </TouchableOpacity>
                     </View>
 
-                    <Text style={styles.label}>Usuario</Text>
+                    <Text style={styles.label}>{t.userSettings.usernameLabel}</Text>
                     <TextInput
                       style={styles.input}
                       value={newUsername}
                       onChangeText={setNewUsername}
-                      placeholder="Nombre de usuario"
+                      placeholder={t.userSettings.newUsernamePlaceholder}
                       placeholderTextColor={colors.textTertiary}
                       editable={!isSubmitting}
                     />
 
-                    <Text style={styles.label}>Contraseña</Text>
+                    <Text style={styles.label}>{t.login.password}</Text>
                     <TextInput
                       style={styles.input}
                       value={newPassword}
                       onChangeText={setNewPassword}
-                      placeholder="Contraseña"
+                      placeholder={t.login.password}
                       placeholderTextColor={colors.textTertiary}
                       secureTextEntry
                       editable={!isSubmitting}
                     />
 
-                    <Text style={styles.label}>Nombre Completo</Text>
+                    <Text style={styles.label}>{t.userSettings.fullNameLabel}</Text>
                     <TextInput
                       style={styles.input}
                       value={newNombre}
                       onChangeText={setNewNombre}
-                      placeholder="Nombre completo (opcional)"
+                      placeholder={t.userSettings.newFullNamePlaceholder}
                       placeholderTextColor={colors.textTertiary}
                       editable={!isSubmitting}
                     />
 
                     <View style={styles.switchRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.switchLabel}>Es administrador</Text>
+                        <Text style={styles.switchLabel}>{t.userSettings.isAdminLabel}</Text>
                         <Text style={styles.switchHint}>
-                          Los administradores pueden gestionar usuarios y configuración del sistema
+                          {t.userSettings.isAdminHint}
                         </Text>
                       </View>
                       <Switch
@@ -639,7 +639,7 @@ export function UserSettingsModal({ visible, onClose, user, onUserUpdated, onLog
                       {isSubmitting ? (
                         <ActivityIndicator color="#FFF" size="small" />
                       ) : (
-                        <Text style={styles.createUserButtonText}>Crear Usuario</Text>
+                        <Text style={styles.createUserButtonText}>{t.userSettings.createUserSubmitButton}</Text>
                       )}
                     </TouchableOpacity>
                   </View>

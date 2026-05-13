@@ -11,8 +11,9 @@
  *    setUpPerformance.js hasn't run yet the app crashes with "Cannot read
  *    property 'now' of undefined". Still reproducible on RN 0.83 / SDK 55.
  *
- * 3. Intl.Locale — Hermes does not ship `Intl.Locale`. `any-date-parser`
- *    (spoken-date parsing) requires it, so we polyfill via @formatjs.
+ * Intl.Locale — needed by `any-date-parser` (spoken-date parsing). Hermes
+ * does not ship it, so we polyfill via @formatjs. PluralRules and
+ * RelativeTimeFormat are not needed: `formatTimeAgo` uses dayjs instead.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const g: any = globalThis as any;
@@ -107,6 +108,7 @@ if (typeof g.performance === 'undefined' || typeof g.performance.now !== 'functi
 }
 
 // ── 3. Intl.Locale ───────────────────────────────────────────────────────────
+// Required by `any-date-parser` (spoken-date parsing). Hermes does not ship it.
 if (typeof g.Intl === 'undefined' || typeof g.Intl.Locale === 'undefined') {
   if (typeof g.Intl === 'undefined' || typeof g.Intl.getCanonicalLocales === 'undefined') {
     require('@formatjs/intl-getcanonicallocales/polyfill');

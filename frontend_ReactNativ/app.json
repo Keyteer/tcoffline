@@ -42,7 +42,8 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true
+            "usesCleartextTraffic": true,
+            "hermesFlags": ["-O2", "-intl"]
           }
         }
       ],

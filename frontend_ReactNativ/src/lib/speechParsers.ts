@@ -56,8 +56,6 @@ export function parseSpokenDate(input: string): string {
   const numeric = parseNumeric(lowered);
   if (numeric) return numeric;
 
-  // `any-date-parser` accepts "del" only partially in es; strip filler words
-  // that are common in dictation but not in its grammar.
   const cleaned = lowered
     .replace(/\s+/g, ' ')
     .trim();

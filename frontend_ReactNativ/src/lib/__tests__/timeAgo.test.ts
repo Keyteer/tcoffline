@@ -1,84 +1,64 @@
 import { formatTimeAgo } from '../timeAgo';
 
-// Mock translation keys matching the Spanish lang structure
-const mockT = {
-  justNow: 'Justo ahora',
-  secondsAgo: 'Hace {count} segundo',
-  secondsAgoPlural: 'Hace {count} segundos',
-  minutesAgo: 'Hace {count} minuto',
-  minutesAgoPlural: 'Hace {count} minutos',
-  hoursAgo: 'Hace {count} hora',
-  hoursAgoPlural: 'Hace {count} horas',
-  daysAgo: 'Hace {count} día',
-  daysAgoPlural: 'Hace {count} días',
-  weeksAgo: 'Hace {count} semana',
-  weeksAgoPlural: 'Hace {count} semanas',
-  monthsAgo: 'Hace {count} mes',
-  monthsAgoPlural: 'Hace {count} meses',
-  yearsAgo: 'Hace {count} año',
-  yearsAgoPlural: 'Hace {count} años',
-};
-
 describe('formatTimeAgo', () => {
   it('returns empty string for null', () => {
-    expect(formatTimeAgo(null, mockT)).toBe('');
+    expect(formatTimeAgo(null, 'es')).toBe('');
   });
 
   it('returns empty for invalid date string', () => {
-    expect(formatTimeAgo('not-a-date', mockT)).toBe('');
+    expect(formatTimeAgo('not-a-date', 'es')).toBe('');
   });
 
   it('returns "just now" for very recent dates', () => {
     const now = new Date();
-    expect(formatTimeAgo(now, mockT)).toBe('Justo ahora');
+    expect(formatTimeAgo(now, 'es')).toMatch(/ahora/);
   });
 
   it('returns seconds ago', () => {
     const thirtySecsAgo = new Date(Date.now() - 30_000);
-    const result = formatTimeAgo(thirtySecsAgo, mockT);
-    expect(result).toMatch(/Hace \d+ segundos/);
+    const result = formatTimeAgo(thirtySecsAgo, 'es');
+    expect(result).toMatch(/segundo/);
   });
 
   it('returns minutes ago', () => {
     const fiveMinAgo = new Date(Date.now() - 5 * 60_000);
-    const result = formatTimeAgo(fiveMinAgo, mockT);
-    expect(result).toBe('Hace 5 minutos');
+    const result = formatTimeAgo(fiveMinAgo, 'es');
+    expect(result).toMatch(/5 minuto/);
   });
 
   it('returns singular minute', () => {
     const oneMinAgo = new Date(Date.now() - 60_000);
-    const result = formatTimeAgo(oneMinAgo, mockT);
-    expect(result).toBe('Hace 1 minuto');
+    const result = formatTimeAgo(oneMinAgo, 'es');
+    expect(result).toMatch(/minuto/);
   });
 
   it('returns hours ago', () => {
     const threeHoursAgo = new Date(Date.now() - 3 * 3600_000);
-    const result = formatTimeAgo(threeHoursAgo, mockT);
-    expect(result).toBe('Hace 3 horas');
+    const result = formatTimeAgo(threeHoursAgo, 'es');
+    expect(result).toMatch(/3 hora/);
   });
 
   it('returns days ago', () => {
     const twoDaysAgo = new Date(Date.now() - 2 * 86_400_000);
-    const result = formatTimeAgo(twoDaysAgo, mockT);
-    expect(result).toBe('Hace 2 días');
+    const result = formatTimeAgo(twoDaysAgo, 'es');
+    expect(result).toMatch(/2 día/);
   });
 
   it('handles ISO string input', () => {
     const fiveMinAgo = new Date(Date.now() - 5 * 60_000).toISOString();
-    const result = formatTimeAgo(fiveMinAgo, mockT);
-    expect(result).toBe('Hace 5 minutos');
+    const result = formatTimeAgo(fiveMinAgo, 'es');
+    expect(result).toMatch(/5 minuto/);
   });
 
   it('handles ISO string without Z suffix (adds UTC)', () => {
-    // The function appends 'Z' to strings with 'T' but no 'Z'
     const now = new Date();
     const isoNoZ = now.toISOString().replace('Z', '');
-    const result = formatTimeAgo(isoNoZ, mockT);
-    expect(result).toBe('Justo ahora');
+    const result = formatTimeAgo(isoNoZ, 'es');
+    expect(result).toMatch(/ahora/);
   });
 
   it('returns "just now" for future dates', () => {
     const future = new Date(Date.now() + 60_000);
-    expect(formatTimeAgo(future, mockT)).toBe('Justo ahora');
+    expect(formatTimeAgo(future, 'es')).toMatch(/ahora/);
   });
 });

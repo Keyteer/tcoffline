@@ -16,6 +16,7 @@ import { useUser } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
 import { Header } from '../components/Header';
+import { EpisodeInfoCard } from '../components/EpisodeInfoCard';
 import { PatientHistoryModal } from '../components/PatientHistoryModal';
 import { MicButton } from '../components/MicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
@@ -221,24 +222,12 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('es-CL', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
 
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return '-';
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
-    const months =
-      language === 'es'
-        ? ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-        : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    const month = months[date.getMonth()];
+    const month = new Intl.DateTimeFormat(language, { month: 'long' }).format(date);
     const year = date.getFullYear();
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -260,21 +249,6 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
       borderRadius: 8,
     },
     historyButtonText: { color: '#FFF', fontSize: 13, fontWeight: '600' },
-    // Patient info card
-    patientCard: {
-      backgroundColor: colors.infoLight,
-      borderWidth: 1,
-      borderColor: colors.infoBorder,
-      borderRadius: 12,
-      padding: 16,
-      marginBottom: 16,
-    },
-    infoGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-    infoItem: { width: '50%', marginBottom: 12 },
-    infoItemFull: { width: '100%', marginBottom: 12 },
-    infoLabel: { fontSize: 12, fontWeight: '500', color: colors.textSecondary, marginBottom: 2 },
-    infoValue: { fontSize: 16, fontWeight: '600', color: colors.text },
-    infoValueSmall: { fontSize: 13, color: colors.textSecondary },
     // Notes
     notesSection: {
       backgroundColor: colors.card,
@@ -448,67 +422,7 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
           </View>
 
           {/* Patient Info Card */}
-          <View style={styles.patientCard}>
-            <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t.clinicalNote.patient}</Text>
-                <Text style={styles.infoValue}>{episode.paciente || 'Sin nombre'}</Text>
-                {episode.run ? <Text style={styles.infoValueSmall}>{t.episodes.run}: {episode.run}</Text> : null}
-                {episode.mrn ? <Text style={styles.infoValueSmall}>{t.episodes.mrn}: {episode.mrn}</Text> : null}
-              </View>
-
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t.clinicalNote.sex}</Text>
-                <Text style={styles.infoValue}>{episode.sexo || t.clinicalNote.unknown}</Text>
-              </View>
-
-              {episode.fecha_nacimiento ? (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>{t.clinicalNote.birthDate}</Text>
-                  <Text style={styles.infoValue}>{formatDate(episode.fecha_nacimiento)}</Text>
-                </View>
-              ) : null}
-
-              {episode.fecha_atencion ? (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>{t.clinicalNote.attentionDate}</Text>
-                  <Text style={styles.infoValue}>{formatDateTime(episode.fecha_atencion)}</Text>
-                </View>
-              ) : null}
-
-              {episode.tipo ? (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>{t.clinicalNote.episodeType}</Text>
-                  <Text style={styles.infoValue}>{episode.tipo}</Text>
-                </View>
-              ) : null}
-
-              {episode.profesional ? (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>{t.clinicalNote.professional}</Text>
-                  <Text style={styles.infoValue}>{episode.profesional}</Text>
-                </View>
-              ) : null}
-
-              {episode.motivo_consulta ? (
-                <View style={styles.infoItemFull}>
-                  <Text style={styles.infoLabel}>{t.clinicalNote.consultReason}</Text>
-                  <Text style={styles.infoValue}>{episode.motivo_consulta}</Text>
-                </View>
-              ) : null}
-
-              {(episode.habitacion || episode.cama) ? (
-                <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>{t.clinicalNote.location}</Text>
-                  <Text style={styles.infoValue}>
-                    {episode.habitacion && episode.cama
-                      ? `${t.clinicalNote.room} ${episode.habitacion} - ${t.clinicalNote.bed} ${episode.cama}`
-                      : episode.habitacion || episode.cama}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
+          <EpisodeInfoCard episode={episode} />
 
           {/* Previous Notes */}
           {(notes.length > 0 || pendingLocalNotes.length > 0) && (

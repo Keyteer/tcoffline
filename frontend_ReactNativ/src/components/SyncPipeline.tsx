@@ -23,7 +23,7 @@ type Props = {
 // the middle of the line.
 export function SyncPipeline({ syncStats }: Props) {
   const { colors } = useTheme();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const {
     isBackendReachable,
     pendingOutbox,
@@ -35,8 +35,7 @@ export function SyncPipeline({ syncStats }: Props) {
   const link2Ok = !!syncStats?.connection.is_online;
 
   const tp = t.syncPipeline;
-  const tAgo = t.timeAgo;
-  const fmtAgo = (iso: string | null) => (iso ? formatTimeAgo(iso, tAgo) : tp.never);
+  const fmtAgo = (iso: string | null) => (iso ? formatTimeAgo(iso, language) : tp.never);
   // Convert ms epoch (from local store / loss tracker) into the ISO string
   // formatTimeAgo expects.
   const fmtMs = (ms: number | null) =>

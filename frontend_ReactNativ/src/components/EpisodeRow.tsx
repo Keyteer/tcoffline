@@ -18,10 +18,7 @@ export function EpisodeRow({ episode, onPress }: Props) {
     if (!dateString) return '-';
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
-    const monthsEs = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const months = language === 'es' ? monthsEs : monthsEn;
-    const month = months[date.getMonth()];
+    const month = new Intl.DateTimeFormat(language, { month: 'short' }).format(date);
     const year = date.getFullYear();
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
@@ -148,7 +145,7 @@ export function EpisodeRow({ episode, onPress }: Props) {
           <Text style={[styles.statusText, hasUnsynedNotes ? styles.statusTextPending : styles.statusTextNormal]}>
             {hasUnsynedNotes
               ? t.episodes.syncStatus.pendingCount
-              : episode.estado || (language === 'es' ? 'Activo' : 'Active')}
+              : episode.estado || t.episodeStatus['Activo']}
           </Text>
         </View>
       </View>
