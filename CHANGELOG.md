@@ -2,6 +2,58 @@
 
 ---
 
+## [2.0.0-rc07] - 2026-05-14
+
+### Corregido
+- **Speech recognition iOS** — cleanup diferido con `sessionGen` para evitar que el cierre tardío de una sesión anterior cancele la nueva. `CommandMicButton` y `MicButton` refactorizados con el nuevo contrato `start/stop/abort`.
+
+---
+
+## [2.0.0-rc06] - 2026-05-14
+
+### Agregado
+- **`useResponsive`** (`src/hooks/useResponsive.ts`) — hook centralizado con breakpoints phone/tabletPortrait/tabletLandscape/desktop. Expone `formFactor`, `columns`, `isTablet`, `isWide` y constantes `LAYOUT_MAX`.
+- Las pantallas principales (`EpisodesScreen`, `NewEpisodeScreen`, `ClinicalNoteScreen`) respetan `LAYOUT_MAX` y se centran en pantallas anchas. `SyncPipeline` y `EpisodeInfoCard` adaptan columnas al `formFactor`.
+- Nuevos parsers de voz en `speechParsers.ts` y mejoras en `useSpeechRecognition` para sesiones concurrentes.
+
+---
+
+## [2.0.0-rc05] - 2026-05-13
+
+### Agregado
+- **Autenticación biométrica** — `src/lib/biometrics.ts` con soporte Face ID, Touch ID, huella digital y reconocimiento facial. Carga lazy para degradación graceful en Expo Go/Web.
+- `LoginScreen` muestra el botón biométrico cuando hay hardware disponible y credenciales guardadas. Tras login por credenciales ofrece activar biometría para la próxima sesión.
+- Nuevas claves i18n `login.biometric*` en ambos idiomas. Plugin `expo-local-authentication ~55.0.14` añadido a `app.json`.
+
+---
+
+## [2.0.0-rc04] - 2026-05-13
+
+### Agregado
+- **`EpisodeInfoCard`** (`src/components/EpisodeInfoCard.tsx`) — muestra los campos clínicos del episodio en cuadrícula adaptativa (2/3/4 col según `formFactor`). `ClinicalNoteScreen` delega en este componente.
+
+### Modificado
+- `timeAgo.ts` reescrito con `Intl.RelativeTimeFormat`; eliminado el bloque `timeAgo` de los archivos de locale.
+- `UserSettingsModal` reestructurado en dos pestañas (Configuración / Gestión de Usuarios) con i18n completo — los textos hardcodeados reemplazados por claves `userSettings.*`.
+
+---
+
+## [2.0.0-rc03] - 2026-05-13
+
+### Agregado
+- **Buscador de episodios** — barra de búsqueda inline en `EpisodesScreen` (feather `Search`). Filtra en tiempo real por nombre, RUN, MRN, número de episodio, motivo, ubicación, habitación y cama. Con búsqueda activa se ignora el tab de tipo.
+- **Iconos vectoriales** — todos los PNG de assets reemplazados por `react-native-feather ^2.0.0` + `react-native-svg 15.15.3`. Afecta a todos los componentes y pantallas principales.
+
+---
+
+## [2.0.0-rc02] - 2026-05-13
+
+### Agregado
+- **Date picker nativo** en `NewEpisodeScreen` — campo `fecha_nacimiento` usa `@react-native-community/datetimepicker ~9.1.0` + `dayjs`. Polyfill `intlPolyfill.ts` ampliado para `Intl.DateTimeFormat`.
+- **`docker-compose.prod.yml`** — compose de producción que arranca desde imagen preconstruida (`image: tcoffline-backend`), sin build ni código fuente montado. Logs JSON con rotación 10 MB × 3.
+
+---
+
 ## [2.0.0-rc01] - 2026-05-12
 
 ### Integrado desde fork `rrlarenas` (v1.9.0-rc08)

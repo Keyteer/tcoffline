@@ -36,7 +36,13 @@ type UnsubscribeFn = () => void;
  * Only one MicButton can be listening at a time: when a new session starts
  * (or the user taps anywhere else), the previous one is aborted.
  */
-let activeSession: { abort: () => void; protectedFromExternal?: boolean } | null = null;
+let activeSession: { abort: () => void; protectedFromExternal?: boolean; isActive?: boolean } | null = null;
+/**
+ * Incremented each time a new session starts. Used by the deferred iOS
+ * cleanup to bail out if a new session supersedes the current one before
+ * the zero-timeout fires (prevents cleaning up the new session's listeners).
+ */
+let sessionGen = 0;
 
 /**
  * Aborts whichever speech-recognition session is currently running, if any.
@@ -187,6 +193,9 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
       // explicitly supersedes any previous one.
       const prev = activeSession;
       activeSession = null;
+      // Increment before abort so any deferred cleanup from the old session
+      // bails out and does not remove this new session's listeners.
+      const myGen = ++sessionGen;
       if (prev) {
         try { prev.abort(); } catch { /* ignore */ }
       }
@@ -234,8 +243,10 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
       // indicator even if the native `end`/`error` event arrives later (or
       // not at all, which can happen on some Android engines after abort).
       const sessionHandle = {
+        isActive: true,
         protectedFromExternal: opts.protectFromExternalStop === true,
         abort: () => {
+          sessionHandle.isActive = false;
           try {
             Module.abort();
           } catch {
@@ -255,6 +266,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
       });
 
       addListener('result', (event: any) => {
+        if (!sessionHandle.isActive) return; // guard against stale post-end events
         if (!isMountedRef.current) return;
         const text: string = event?.results?.[0]?.transcript ?? '';
         if (event?.isFinal) {
@@ -282,16 +294,15 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
       });
 
       addListener('end', () => {
-        // Always release native listeners as soon as the session ends so a
-        // later session started by another MicButton instance doesn't also
-        // deliver events to this hook (which would double-write fields).
-        cleanupListeners();
         if (activeSession === sessionHandle) activeSession = null;
-        if (!isMountedRef.current) return;
-        // iOS fires 'end' before the final 'result' in non-continuous mode
-        // (and sometimes in continuous mode too). Promote the last interim
-        // transcript to final so text is written into the field even when
-        // no isFinal result event arrived before end.
+        if (!isMountedRef.current) {
+          sessionHandle.isActive = false;
+          cleanupListeners();
+          return;
+        }
+        // iOS non-continuous: 'end' fires before the final 'result' event.
+        // Promote the last interim to final as a fallback for the case where
+        // 'result(isFinal)' has not yet arrived.
         if (Platform.OS === 'ios' && currentInterimRef.current) {
           const promoted = (finalChunksRef.current
             ? finalChunksRef.current + ' '
@@ -302,6 +313,20 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
         currentInterimRef.current = '';
         setInterimTranscript('');
         setState((prev) => (prev === 'error' ? prev : 'idle'));
+        // Defer listener cleanup by one JS turn on iOS so that a 'result'
+        // event already dispatched by native (but not yet processed by JS)
+        // can still fire. The generation counter prevents this from touching
+        // a new session's listeners if start() is called within the timeout.
+        if (Platform.OS === 'ios') {
+          setTimeout(() => {
+            if (sessionGen !== myGen) return; // new session started, bail
+            sessionHandle.isActive = false;
+            cleanupListeners();
+          }, 0);
+        } else {
+          sessionHandle.isActive = false;
+          cleanupListeners();
+        }
       });
 
       try {

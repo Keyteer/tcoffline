@@ -42,16 +42,59 @@ export function CommandMicButton<F extends string>({
   const lastLenRef = useRef(0);
   const activeFieldRef = useRef<F | null>(null);
 
-  // Forward interim transcripts (raw, unparsed) for visual feedback.
+  // Refs holding the latest speech values, safe to read inside setTimeout callbacks.
+  const latestInterimRef = useRef('');
+  const latestTranscriptRef = useRef('');
+  useEffect(() => { latestInterimRef.current = speech.interimTranscript; }, [speech.interimTranscript]);
+  useEffect(() => { latestTranscriptRef.current = speech.transcript ?? ''; }, [speech.transcript]);
+
+  // Debounce timer: fires 700 ms after the user stops speaking (interim stops changing).
+  const interimDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Forward interim transcripts (raw, unparsed) for visual feedback and start debounce.
   useEffect(() => {
     if (onInterim) onInterim(speech.interimTranscript);
-  }, [speech.interimTranscript, onInterim]);
 
-  // Process newly-arrived final transcript chunks.
+    if (interimDebounceRef.current) {
+      clearTimeout(interimDebounceRef.current);
+      interimDebounceRef.current = null;
+    }
+    if (!speech.interimTranscript) return;
+
+    // On iOS, continuous mode never fires result(isFinal) at natural pauses — only
+    // at explicit session stop. Process interim as commands after 700 ms of silence
+    // so the user doesn't have to press stop after each phrase.
+    interimDebounceRef.current = setTimeout(() => {
+      interimDebounceRef.current = null;
+      const interim = latestInterimRef.current.trim();
+      if (!interim) return;
+
+      const finalSoFar = latestTranscriptRef.current;
+      const combined = (finalSoFar ? finalSoFar + ' ' : '') + interim;
+      const chunk = combined.slice(lastLenRef.current).trim();
+      if (!chunk) return;
+
+      lastLenRef.current = combined.length;
+
+      const segments = parseCommandTranscript<F>(chunk, vocab, activeFieldRef.current, {
+        nextAliases,
+        fieldOrder,
+      });
+      for (const seg of segments) {
+        onSegment(seg.field, seg.value);
+        activeFieldRef.current = seg.field;
+        onActiveFieldChange?.(seg.field);
+      }
+    }, 700);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speech.interimTranscript]);
+
+  // Process newly-arrived final transcript chunks (fallback / catches phrases the
+  // debounce missed, e.g. quick speech where session ended before 700 ms elapsed).
   useEffect(() => {
     const full = speech.transcript ?? '';
     if (full.length <= lastLenRef.current) {
-      // transcript was reset (e.g. on a fresh start)
+      // transcript was reset (e.g. on a fresh start) or already covered by debounce
       lastLenRef.current = full.length;
       return;
     }
@@ -74,6 +117,10 @@ export function CommandMicButton<F extends string>({
   // Reset bookkeeping when the session ends so the next start parses fresh.
   useEffect(() => {
     if (speech.state === 'idle') {
+      if (interimDebounceRef.current) {
+        clearTimeout(interimDebounceRef.current);
+        interimDebounceRef.current = null;
+      }
       lastLenRef.current = 0;
     }
   }, [speech.state]);

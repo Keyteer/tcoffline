@@ -44,10 +44,22 @@ export function MicButton({
   const speech = useSpeechRecognition();
   const baseValueRef = useRef<string>(value);
 
-  // Surface interim transcripts to the parent if requested.
+  // Surface interim transcripts: update the field in real-time (isFinal: false)
+  // so text appears as the user speaks rather than only when the session ends.
+  // On iOS, result(isFinal) fires at session stop, so without this the field
+  // stays empty the entire time the user is dictating.
   useEffect(() => {
     if (onInterim) onInterim(speech.interimTranscript);
-  }, [speech.interimTranscript, onInterim]);
+    if (!speech.interimTranscript) return;
+    if (mode === 'replace') {
+      onTranscript(speech.interimTranscript, false);
+    } else {
+      const base = baseValueRef.current ?? '';
+      const sep = base && !base.endsWith(' ') ? ' ' : '';
+      onTranscript(`${base}${sep}${speech.interimTranscript}`.trim(), false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [speech.interimTranscript]);
 
   // Forward final transcript chunks to the consumer.
   useEffect(() => {

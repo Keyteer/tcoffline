@@ -158,6 +158,22 @@ La documentación completa de todos los endpoints HTTP — contratos, parámetro
 - **Privacidad:** el audio no se envía al backend; la transcripción ocurre on-device en móvil y en el motor del navegador en web.
 - **Permisos:** primer uso solicita micrófono (y reconocimiento de voz en iOS).
 - **Limitaciones:** Web requiere `https://` o `localhost`; Firefox y Brave muestran el botón deshabilitado por falta de soporte de la API.
+- **Correcciones iOS (rc02):** gestión de sesiones concurrentes con `sessionGen` para evitar que el cleanup diferido de una sesión anterior cancele la sesión nueva.
+
+### Autenticación biométrica
+- **Descripción:** Opción de iniciar sesión con Face ID, Touch ID, huella digital o reconocimiento facial según el hardware del dispositivo.
+- **Implementación:** `src/lib/biometrics.ts` usando `expo-local-authentication`. Carga lazy del módulo nativo para degradación graceful en Expo Go y Web.
+- **Flujo:** inicio exitoso por credenciales → oferta de activar biometría → credenciales cifradas en `expo-secure-store` → sesiones siguientes autenticables con el sensor.
+- **Plataformas:** iOS (Face ID / Touch ID) y Android (huella / facial). Deshabilitado en Web y cuando no hay hardware enrollado.
+
+### Búsqueda de episodios
+- **Descripción:** Barra de búsqueda inline en `EpisodesScreen` que filtra en tiempo real.
+- **Campos indexados:** nombre del paciente, RUN, MRN, número de episodio, motivo de consulta, ubicación, habitación, cama.
+- **Comportamiento:** con búsqueda activa se ignora el filtro por tipo de episodio (`activeTab`) y se busca en todos los episodios.
+
+### Soporte multi FormFactor de pantalla
+- **Descripción:** Hook `src/hooks/useResponsive.ts` con breakpoints centralizados que expone `formFactor` (phone / tabletPortrait / tabletLandscape / desktop), `columns`, `isTablet`, `isWide`.
+- **Efecto:** las pantallas principales respetan `LAYOUT_MAX` (ancho máximo del contenido) y se centran horizontalmente en tabletas y escritorio. `EpisodeInfoCard` y `SyncPipeline` adaptan su layout de columnas al `formFactor`.
 
 ### Seguridad
 - **Autenticación:** JWT con refresh tokens (Bearer token), fallback Basic Auth
