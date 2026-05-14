@@ -5,6 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
 import { formatTimeAgo } from '../lib/timeAgo';
+import { useResponsive, LAYOUT_MAX } from '../hooks/useResponsive';
 import type { SyncStats } from '../types';
 
 type Props = {
@@ -30,6 +31,7 @@ export function SyncPipeline({ syncStats }: Props) {
     lastBackendLossAt,
     lastDeviceSendAt,
   } = useConnectivity();
+  const { isWide } = useResponsive();
 
   const link1Ok = isBackendReachable;
   const link2Ok = !!syncStats?.connection.is_online;
@@ -51,6 +53,11 @@ export function SyncPipeline({ syncStats }: Props) {
       paddingVertical: 14,
       marginBottom: 8,
       gap: 8,
+      // Keep the chain narrow on tablets / desktops so nodes don't drift far
+      // apart and labels stay readable. Centred within the parent container.
+      width: '100%',
+      maxWidth: LAYOUT_MAX.pipeline,
+      alignSelf: isWide ? 'center' : 'stretch',
     },
     row: {
       flexDirection: 'row',

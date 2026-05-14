@@ -22,6 +22,7 @@ import { MicButton } from '../components/MicButton';
 import { CommandMicButton } from '../components/CommandMicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
+import { LAYOUT_MAX } from '../hooks/useResponsive';
 import { api } from '../lib/api';
 import { localStore } from '../lib/localStore';
 import { outbox } from '../lib/outbox';
@@ -290,7 +291,14 @@ export function NewEpisodeScreen({ navigation }: Props) {
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    scrollContent: { padding: 16, paddingBottom: 40 },
+    scrollContent: {
+      padding: 16,
+      paddingBottom: 40,
+      // Centre & cap the form on tablets / desktops.
+      width: '100%',
+      maxWidth: LAYOUT_MAX.form,
+      alignSelf: 'center',
+    },
     backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     backText: { color: colors.primary, fontSize: 14 },
     title: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 16 },

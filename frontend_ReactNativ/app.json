@@ -13,7 +13,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Permite a $(PRODUCT_NAME) reconocer voz para dictar texto en formularios cl?nicos.",
+        "NSMicrophoneUsageDescription": "Permite a $(PRODUCT_NAME) usar el micr?fono para dictado por voz."
+      },
+      "bundleIdentifier": "com.anonymous.TcOffline"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +26,12 @@
         "backgroundColor": "#ffffff"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.TcOffline"
+      "package": "com.anonymous.TcOffline",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,8 +52,7 @@
         "expo-build-properties",
         {
           "android": {
-            "usesCleartextTraffic": true,
-            "hermesFlags": ["-O2", "-intl"]
+            "usesCleartextTraffic": true
           }
         }
       ],

@@ -19,6 +19,7 @@ import { api } from '../lib/api';
 import { auth } from '../lib/auth';
 import { biometrics } from '../lib/biometrics';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
+import { LAYOUT_MAX } from '../hooks/useResponsive';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -145,6 +146,10 @@ export function LoginScreen({ navigation }: Props) {
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
       shadowRadius: 8,
+      // Keep the auth card narrow even on tablets / desktops.
+      width: '100%',
+      maxWidth: LAYOUT_MAX.auth,
+      alignSelf: 'center',
     },
     title: {
       fontSize: 28,

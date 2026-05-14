@@ -13,6 +13,61 @@ function pad2(n: number): string {
   return n < 10 ? `0${n}` : String(n);
 }
 
+/** Spanish and English month name → month number (1-based). */
+const MONTH_NAMES: Record<string, number> = {
+  // Spanish
+  enero: 1, febrero: 2, marzo: 3, abril: 4, mayo: 5, junio: 6,
+  julio: 7, agosto: 8, septiembre: 9, setiembre: 9, octubre: 10,
+  noviembre: 11, diciembre: 12,
+  // English (full + abbreviated)
+  january: 1, february: 2, march: 3, april: 4, /* may: 5 — handled below */ june: 6,
+  july: 7, august: 8, september: 9, october: 10, november: 11, december: 12,
+  jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
+  jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+};
+
+/**
+ * Parses natural-language date strings without relying on `any-date-parser` /
+ * `Intl.Locale` (which may not be available on Hermes/iOS).
+ *
+ * Handles:
+ *  - "12 de marzo de 1980"  →  1980-03-12
+ *  - "12 marzo 1980"        →  1980-03-12
+ *  - "march 12 1980"        →  1980-03-12
+ *  - "march 12, 1980"       →  1980-03-12
+ *  - "12 of march 1980"     →  1980-03-12
+ */
+function parseNaturalDate(raw: string): string | null {
+  // Strip commas, normalise whitespace and lower-case.
+  const s = raw.toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ').trim();
+
+  // DD [de] MONTH [de] YYYY  (Spanish & English "of" forms)
+  const dm = s.match(/^(\d{1,2})(?:\s+(?:de|of))?\s+([a-záéíóú]+)(?:\s+(?:de|of))?\s+(\d{2,4})$/);
+  if (dm) {
+    const d = parseInt(dm[1], 10);
+    const mon = MONTH_NAMES[dm[2]];
+    let y = parseInt(dm[3], 10);
+    if (mon && d >= 1 && d <= 31) {
+      if (y < 100) y += y < 30 ? 2000 : 1900;
+      return `${y}-${pad2(mon)}-${pad2(d)}`;
+    }
+  }
+
+  // MONTH DD YYYY
+  const md = s.match(/^([a-záéíóú]+)\s+(\d{1,2})\s+(\d{2,4})$/);
+  if (md) {
+    const mon = MONTH_NAMES[md[1]];
+    const d = parseInt(md[2], 10);
+    let y = parseInt(md[3], 10);
+    if (mon && d >= 1 && d <= 31) {
+      if (y < 100) y += y < 30 ? 2000 : 1900;
+      return `${y}-${pad2(mon)}-${pad2(d)}`;
+    }
+  }
+
+  return null;
+}
+
 /**
  * Numeric fast path for `dd/mm/yyyy`, `dd-mm-yyyy`, `dd.mm.yyyy` (with 2- or
  * 4-digit year). We do this before delegating to `any-date-parser` because we
@@ -55,6 +110,9 @@ export function parseSpokenDate(input: string): string {
 
   const numeric = parseNumeric(lowered);
   if (numeric) return numeric;
+
+  const natural = parseNaturalDate(lowered);
+  if (natural) return natural;
 
   const cleaned = lowered
     .replace(/\s+/g, ' ')

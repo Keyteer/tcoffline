@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { LAYOUT_MAX } from '../hooks/useResponsive';
 import {
   setServerUrl,
   testConnection,
@@ -134,6 +135,10 @@ export function ServerDiscoveryScreen({ navigation, route }: Props) {
       padding: 20,
       borderWidth: 1,
       borderColor: colors.border,
+      // Keep the form narrow on tablets / desktops.
+      width: '100%',
+      maxWidth: LAYOUT_MAX.auth,
+      alignSelf: 'center',
     },
     label: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, marginBottom: 6 },
     input: {

@@ -15,6 +15,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useUser } from '../contexts/UserContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useConnectivity } from '../contexts/ConnectivityContext';
+import { useResponsive, LAYOUT_MAX } from '../hooks/useResponsive';
 import { Header } from '../components/Header';
 import { EpisodeRow } from '../components/EpisodeRow';
 import { SyncPipeline } from '../components/SyncPipeline';
@@ -36,6 +37,7 @@ export function EpisodesScreen({ navigation }: Props) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const { lastReplayAt } = useConnectivity();
+  const { columns } = useResponsive();
   const [activeTab, setActiveTab] = useState<EpisodeType | null>(null);
   const [allEpisodes, setAllEpisodes] = useState<Episode[]>([]);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
@@ -208,6 +210,11 @@ export function EpisodesScreen({ navigation }: Props) {
     content: {
       flex: 1,
       paddingHorizontal: 16,
+      // Cap content width on tablets / desktops so cards don't stretch into
+      // unreadable lines. Centred horizontally on wide screens.
+      width: '100%',
+      maxWidth: LAYOUT_MAX.content,
+      alignSelf: 'center',
     },
     titleRow: {
       flexDirection: 'row',
@@ -410,9 +417,14 @@ export function EpisodesScreen({ navigation }: Props) {
         ) : (
           <FlatList
             data={episodes}
+            key={`cols-${columns}`}
+            numColumns={columns}
+            columnWrapperStyle={columns > 1 ? { gap: 12 } : undefined}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
-              <EpisodeRow episode={item} onPress={() => handleEpisodeClick(item.id)} />
+              <View style={columns > 1 ? { flex: 1 } : undefined}>
+                <EpisodeRow episode={item} onPress={() => handleEpisodeClick(item.id)} />
+              </View>
             )}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />

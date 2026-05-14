@@ -109,6 +109,10 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
 
   const listenersRef = useRef<UnsubscribeFn[]>([]);
   const isMountedRef = useRef(true);
+  /** Accumulated final transcript chunks for the current session. */
+  const finalChunksRef = useRef('');
+  /** Last received interim transcript (used to promote to final on iOS). */
+  const currentInterimRef = useRef('');
 
   const cleanupListeners = useCallback(() => {
     for (const off of listenersRef.current) {
@@ -137,6 +141,8 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
   }, []);
 
   const reset = useCallback(() => {
+    finalChunksRef.current = '';
+    currentInterimRef.current = '';
     setTranscript('');
     setInterimTranscript('');
     setError(null);
@@ -206,7 +212,9 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
       }
 
       cleanupListeners();
-      const finalChunksRef = { current: '' };
+      // Reset per-session accumulators.
+      finalChunksRef.current = '';
+      currentInterimRef.current = '';
 
       const addListener = (event: string, cb: (e: any) => void) => {
         try {
@@ -255,7 +263,9 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
             : '') + text;
           setTranscript(finalChunksRef.current);
           setInterimTranscript('');
+          currentInterimRef.current = '';
         } else {
+          currentInterimRef.current = text;
           setInterimTranscript(text);
         }
       });
@@ -278,6 +288,18 @@ export function useSpeechRecognition(): UseSpeechRecognitionResult {
         cleanupListeners();
         if (activeSession === sessionHandle) activeSession = null;
         if (!isMountedRef.current) return;
+        // iOS fires 'end' before the final 'result' in non-continuous mode
+        // (and sometimes in continuous mode too). Promote the last interim
+        // transcript to final so text is written into the field even when
+        // no isFinal result event arrived before end.
+        if (Platform.OS === 'ios' && currentInterimRef.current) {
+          const promoted = (finalChunksRef.current
+            ? finalChunksRef.current + ' '
+            : '') + currentInterimRef.current;
+          finalChunksRef.current = promoted;
+          setTranscript(promoted);
+        }
+        currentInterimRef.current = '';
         setInterimTranscript('');
         setState((prev) => (prev === 'error' ? prev : 'idle'));
       });

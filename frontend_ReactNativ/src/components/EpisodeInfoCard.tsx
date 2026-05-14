@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useResponsive } from '../hooks/useResponsive';
 import type { EpisodeDetail } from '../types';
 
 type Props = {
@@ -11,6 +12,12 @@ type Props = {
 export function EpisodeInfoCard({ episode }: Props) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
+  const { formFactor } = useResponsive();
+  // Tighter columns on wider screens so info doesn't stretch.
+  const itemWidth: '50%' | '33.33%' | '25%' =
+    formFactor === 'desktop' ? '25%' :
+    formFactor === 'tabletLandscape' ? '33.33%' :
+    '50%';
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
@@ -45,7 +52,7 @@ export function EpisodeInfoCard({ episode }: Props) {
       marginBottom: 16,
     },
     infoGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-    infoItem: { width: '50%', marginBottom: 12 },
+    infoItem: { width: itemWidth, marginBottom: 12, paddingRight: 8 },
     infoItemFull: { width: '100%', marginBottom: 12 },
     infoLabel: { fontSize: 12, fontWeight: '500', color: colors.textSecondary, marginBottom: 2 },
     infoValue: { fontSize: 16, fontWeight: '600', color: colors.text },

@@ -1,8 +1,18 @@
-import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 const BIOMETRIC_CREDS_KEY = 'trakcare_biometric_creds_v1';
+
+// Lazy-load the native module so the app degrades gracefully in Expo Go / web
+// instead of crashing at startup with "Cannot find native module".
+function getLocalAuth() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('expo-local-authentication') as typeof import('expo-local-authentication');
+  } catch {
+    return null;
+  }
+}
 
 /** Key into `t.login` that describes the available biometric method. */
 export type BiometricType = 'biometricLabelFaceId' | 'biometricLabelTouchId' | 'biometricLabelFingerprint' | 'biometricLabelFacial' | 'biometricLabel';
@@ -10,17 +20,21 @@ export type BiometricType = 'biometricLabelFaceId' | 'biometricLabelTouchId' | '
 export const biometrics = {
   async isAvailable(): Promise<boolean> {
     if (Platform.OS === 'web') return false;
-    const hw = await LocalAuthentication.hasHardwareAsync();
+    const LA = getLocalAuth();
+    if (!LA) return false;
+    const hw = await LA.hasHardwareAsync();
     if (!hw) return false;
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
+    const enrolled = await LA.isEnrolledAsync();
     return enrolled;
   },
 
   /** Returns a translation key so callers can resolve the label via i18n. */
   async getBiometricType(): Promise<BiometricType> {
-    const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    const hasFacial = types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
-    const hasFingerprint = types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+    const LA = getLocalAuth();
+    if (!LA) return 'biometricLabel';
+    const types = await LA.supportedAuthenticationTypesAsync();
+    const hasFacial = types.includes(LA.AuthenticationType.FACIAL_RECOGNITION);
+    const hasFingerprint = types.includes(LA.AuthenticationType.FINGERPRINT);
     if (Platform.OS === 'ios') {
       return hasFacial ? 'biometricLabelFaceId' : 'biometricLabelTouchId';
     }
@@ -48,7 +62,9 @@ export const biometrics = {
    * Returns true if successfully stored.
    */
   async enableWithPrompt(username: string, password: string, promptMessage: string): Promise<boolean> {
-    const result = await LocalAuthentication.authenticateAsync({
+    const LA = getLocalAuth();
+    if (!LA) return false;
+    const result = await LA.authenticateAsync({
       promptMessage,
       disableDeviceFallback: false,
     });
@@ -72,7 +88,9 @@ export const biometrics = {
   async authenticateAndLoad(
     promptMessage: string,
   ): Promise<{ username: string; password: string } | null> {
-    const result = await LocalAuthentication.authenticateAsync({
+    const LA = getLocalAuth();
+    if (!LA) return null;
+    const result = await LA.authenticateAsync({
       promptMessage,
       disableDeviceFallback: false,
     });

@@ -21,6 +21,7 @@ import { PatientHistoryModal } from '../components/PatientHistoryModal';
 import { MicButton } from '../components/MicButton';
 import { stopActiveSpeechRecognition } from '../hooks/useSpeechRecognition';
 import { useKeyboardHeight } from '../hooks/useKeyboardHeight';
+import { LAYOUT_MAX } from '../hooks/useResponsive';
 import { api } from '../lib/api';
 import { outbox } from '../lib/outbox';
 import type { OutboxEntry } from '../lib/outbox';
@@ -237,7 +238,14 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    scrollContent: { padding: 16, paddingBottom: 40 },
+    scrollContent: {
+      padding: 16,
+      paddingBottom: 40,
+      // Centre & cap the form column on tablets / desktops.
+      width: '100%',
+      maxWidth: LAYOUT_MAX.form,
+      alignSelf: 'center',
+    },
     backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
     backText: { color: colors.primary, fontSize: 14 },
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
