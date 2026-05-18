@@ -311,7 +311,7 @@ class TestClinicalNoteFlow:
         assert "Paciente estable" in oru_msg
 
     async def test_oru_skipped_for_unsynced_episode(self, db, admin_user):
-        """clinical_note_created when episode is OFFP/OFFE → no ORU, event failed."""
+        """clinical_note_created when episode is OFFP/OFFE → no ORU, event deferred (pending)."""
         _make_user_with_filtros(db, admin_user)
 
         episode = _make_episode(
@@ -339,7 +339,7 @@ class TestClinicalNoteFlow:
         assert result is False
 
         db.refresh(event)
-        assert event.status == "failed"
+        assert event.status == "pending"
         mock_send.assert_not_called()
 
         db.refresh(note)

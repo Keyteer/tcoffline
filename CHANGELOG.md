@@ -2,6 +2,16 @@
 
 ---
 
+## [2.0.0-rc08] - 2026-05-18
+
+### Agregado
+- **Backend enforcement of read-only mode** — Se implementa funcion de rechazar operaciones de escritura cuando el modo de solo lectura está activado.
+- **Adiciones de testing** — testing para funcionalidades añadidas desde versión 2.0-beta06.
+- **Bug** - Formato de recepción de datos objet json no compatible con version web/electron stringifyed json.
+- **Fix** - Añadido parse_data_json() en schemas.py para validar objetos json, accepta tanto json object como stringifyed json object.
+
+---
+
 ## [2.0.0-rc07] - 2026-05-14
 
 ### Corregido

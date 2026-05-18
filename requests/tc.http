@@ -6,21 +6,21 @@
 ### 3. Send
 ### ================================================================
 
-@tcBaseUrl = http://demo01.tcdb.vtas.cl.intersystems.com
-@endpoint  = /demo01/tcoffline
-# base64("demo:demodemo")
-@auth      = Basic ZGVtbzpkZW1vZGVtbw==
+@tcBaseUrl = {{{{$dotenv CENTRAL_URL}}}}
+@authUser  = {{$dotenv CENTRAL_API_USERNAME}}
+@authPass  = {{$dotenv CENTRAL_API_PASSWORD}}
+@auth      = Basic {{authUser}} {{authPass}}
 
 ###
-GET {{tcBaseUrl}}{{endpoint}}/getData
+GET {{tcBaseUrl}}/demo01/tcoffline/getData
 Authorization: {{auth}}
 
 ###
-GET {{tcBaseUrl}}{{endpoint}}/getDataTest
+GET {{tcBaseUrl}}/demo01/tcoffline/getDataTest
 Authorization: {{auth}}
 
 ###
-POST {{tcBaseUrl}}{{endpoint}}/hl7inbound
+POST {{tcBaseUrl}}/hl7inbound
 Authorization: {{auth}}
 Content-Type: application/json
 

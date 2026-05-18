@@ -3,7 +3,7 @@
 ### handled from /docs or directly via DB.
 ### ================================================================
 
-@baseUrl = http://172.18.9.205:8000
+@baseUrl = http://localhost:8000
 
 ### ----------------------------------------------------------------
 ### Auth — capture token for all requests below

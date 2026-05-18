@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.routers import auth, episodes, notes, general, sync
 from app.db import Base, engine
 from app.settings import settings
@@ -39,6 +40,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+# Paths that must remain writable even when read-only mode is active:
+# - /auth/*  : users must always be able to authenticate
+# - PUT /settings : so admins can turn read-only mode off
+_READ_ONLY_EXEMPT = {
+    ("PUT", "/settings"),
+}
+
+
+@app.middleware("http")
+async def enforce_read_only_mode(request: Request, call_next):
+    """Block mutating requests when enable_read_only_mode is true in the DB."""
+    if request.method in _MUTATING_METHODS:
+        path = request.url.path
+        if not path.startswith("/auth/") and (request.method, path) not in _READ_ONLY_EXEMPT:
+            from app.db import SessionLocal
+            from app import models
+            db = SessionLocal()
+            try:
+                record = db.query(models.SyncState).filter(
+                    models.SyncState.key == "enable_read_only_mode"
+                ).first()
+                is_read_only = record is not None and record.value.lower() == "true"
+            finally:
+                db.close()
+            if is_read_only:
+                return JSONResponse(
+                    status_code=503,
+                    content={"detail": "El servidor está en modo solo lectura"},
+                )
+    return await call_next(request)
+
 
 @app.middleware("http")
 async def add_language_header(request: Request, call_next):

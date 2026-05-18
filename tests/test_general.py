@@ -1,4 +1,6 @@
 """Tests for general endpoints: /health, /discovery, /sync/status, /settings."""
+from unittest.mock import patch, MagicMock
+
 from app import models
 
 
@@ -75,3 +77,41 @@ class TestSystemSettings:
             "enable_read_only_mode": False,
         }, headers=user_headers)
         assert resp.status_code == 403
+
+
+class TestCentralHealth:
+    """`/health/central` proxies an HTTP GET to the central server."""
+
+    def _mock_httpx_response(self, status_code: int):
+        # Build a context-manager-compatible Client mock whose .get() returns
+        # a response with the given status_code.
+        response = MagicMock()
+        response.status_code = status_code
+
+        client_instance = MagicMock()
+        client_instance.get.return_value = response
+        client_instance.__enter__.return_value = client_instance
+        client_instance.__exit__.return_value = None
+
+        return client_instance
+
+    def test_central_online(self, client):
+        with patch("app.routers.general.httpx.Client") as mock_cls:
+            mock_cls.return_value = self._mock_httpx_response(200)
+            resp = client.get("/health/central")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "online"
+        assert "central_url" in body
+
+    def test_central_offline_on_non_200(self, client):
+        with patch("app.routers.general.httpx.Client") as mock_cls:
+            mock_cls.return_value = self._mock_httpx_response(503)
+            resp = client.get("/health/central")
+        assert resp.json()["status"] == "offline"
+
+    def test_central_offline_on_exception(self, client):
+        with patch("app.routers.general.httpx.Client", side_effect=RuntimeError("boom")):
+            resp = client.get("/health/central")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "offline"

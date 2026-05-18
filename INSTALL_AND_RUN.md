@@ -233,12 +233,3 @@ Alternativamente copiar el APK al dispositivo e instalar manualmente.
 # Carga 10 pacientes con episodios, alergias, laboratorios, imágenes, etc.
 python load_test_data.py
 ```
-
----
-
-## Checklist de producción
-
-- [ ] Definir `JWT_SECRET_KEY` con valor aleatorio seguro en `.env`
-- [ ] Cambiar `CORS_ORIGINS` al dominio/IP real del frontend
-- [ ] Configurar backup del volumen Docker `pgdata`
-- [ ] Verificar `CENTRAL_URL` y credenciales de API central

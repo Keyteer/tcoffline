@@ -40,15 +40,18 @@ docker compose build test
 | `tests/test_auth.py` | Login, JWT, refresh token, roles, `/auth/me` |
 | `tests/test_episodes.py` | CRUD episodios, filtros, paginación |
 | `tests/test_notes.py` | CRUD notas clínicas, relación con episodio |
-| `tests/test_sync.py` | Estado de sincronización, trigger manual, retry |
-| `tests/test_general.py` | Health checks, settings globales, discovery endpoint |
+| `tests/test_sync.py` | Estado de sincronización, trigger manual, retry, conteos sobre la BD real (`pending_events`, `failed_events`) |
+| `tests/test_general.py` | Health checks (incluye `/health/central` con `httpx.Client` mockeado), settings globales, discovery endpoint |
+| `tests/test_hl7_builder.py` | Unit tests de `HL7MessageBuilder`: MSH, escape de separadores, normalización de género, PID/PV1/PV2, mensajes A28/A01/A03/ORU (sin BD ni HTTP) |
 
 ---
 
 ## Frontend — Jest
 
-Los tests cubren las librerías puras en `src/lib/`: validación de RUT chileno, formateo de
-tiempo relativo, manejo de credenciales y configuración de servidor.
+Los tests cubren las librerías en `src/lib/`: validación de RUT chileno, formateo de
+tiempo relativo, parseo de voz, manejo de credenciales, configuración de servidor,
+local store offline-first, outbox de mutaciones pendientes y cliente API
+(store-first reads, refresh de tokens en 401, manejo de errores).
 
 ```bash
 cd frontend_ReactNativ
@@ -62,6 +65,20 @@ npm run test:watch
 # Con reporte de cobertura
 npm run test:coverage
 ```
+
+### Archivos de test
+
+| Archivo | Cubre |
+|---------|-------|
+| `src/lib/__tests__/rutValidation.test.ts` | Validación y formato de RUT chileno |
+| `src/lib/__tests__/timeAgo.test.ts` | Formato de tiempo relativo ("hace 5 min") |
+| `src/lib/__tests__/speechParsers.test.ts` | Parseo de transcripciones de voz |
+| `src/lib/__tests__/auth.test.ts` | Almacenamiento de tokens en `SecureStore` |
+| `src/lib/__tests__/serverConfig.test.ts` | Persistencia de URL del servidor local |
+| `src/lib/__tests__/localStore.test.ts` | Envelope `{data, timestamp}`, lecturas/escrituras por scope, `clearAll` preservando `outbox_queue` |
+| `src/lib/__tests__/outbox.test.ts` | Enqueue/remove/clear, FIFO, ids únicos, `localEpisodePseudoId`, `retargetNotesForLocalEpisode` |
+| `src/lib/__tests__/api.test.ts` | `verifyCredentials`, refresh + retry en 401, `APIError` (404/422), patrón store-first con `onUpdate`, bypass de local store para queries filtradas |
+| `src/lib/__tests__/_inMemoryStorage.ts` | Helper compartido: reemplaza el mock de `AsyncStorage` por un `Map` con estado real (ignorado por Jest según `testPathIgnorePatterns`) |
 
 ---
 

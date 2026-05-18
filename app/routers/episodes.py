@@ -96,7 +96,6 @@ def get_unique_episode_types(
     or invalid values left over from rejected local episodes.
     """
     types = db.query(models.Episode.tipo).filter(
-        models.Episode.synced_flag == True,
         models.Episode.tipo.isnot(None),
         models.Episode.tipo != ''
     ).distinct().order_by(models.Episode.tipo).all()
@@ -117,7 +116,6 @@ def get_unique_locations(
     locally that central later rejected (e.g. invalid CTLOC descriptions).
     """
     query = db.query(models.Episode.ubicacion).filter(
-        models.Episode.synced_flag == True,
         models.Episode.ubicacion.isnot(None),
         models.Episode.ubicacion != ''
     )

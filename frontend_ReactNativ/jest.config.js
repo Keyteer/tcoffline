@@ -5,4 +5,7 @@ module.exports = {
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   setupFiles: ['./jest.setup.js'],
+  // Files inside __tests__ whose name starts with "_" are shared helpers,
+  // not test suites.
+  testPathIgnorePatterns: ['/node_modules/', '/__tests__/_'],
 };
