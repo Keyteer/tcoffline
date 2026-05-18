@@ -1,3 +1,4 @@
+import json
 from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional, Any
@@ -92,6 +93,18 @@ class EpisodeCreate(BaseModel):
     motivo_consulta: Optional[str] = None
     data_json: dict
 
+    @field_validator('data_json', mode='before')
+    @classmethod
+    def parse_data_json(cls, v):
+        if isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except json.JSONDecodeError as exc:
+                raise ValueError('data_json must be a valid JSON object') from exc
+        if not isinstance(v, dict):
+            raise ValueError('data_json must be a dictionary or JSON object string')
+        return v
+
     @field_validator('fecha_nacimiento', 'fecha_atencion', mode='before')
     @classmethod
     def parse_dates(cls, v):
@@ -116,6 +129,20 @@ class EpisodeUpdate(BaseModel):
     profesional: Optional[str] = None
     motivo_consulta: Optional[str] = None
     data_json: Optional[dict] = None
+
+    @field_validator('data_json', mode='before')
+    @classmethod
+    def parse_data_json(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, str):
+            try:
+                v = json.loads(v)
+            except json.JSONDecodeError as exc:
+                raise ValueError('data_json must be a valid JSON object') from exc
+        if not isinstance(v, dict):
+            raise ValueError('data_json must be a dictionary or JSON object string')
+        return v
 
 
 class Episode(EpisodeBase):

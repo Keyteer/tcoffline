@@ -1,13 +1,9 @@
 ### ================================================================
-### Hospital Server — Key operations
-### FastAPI: http://localhost:8000  (docs at /docs)
-###
-### Focus: create episode + create note (the two mutations that drive
-### outbox → HL7 flow). Simple GETs and trigger endpoints are better
+### Simple GETs and trigger endpoints are better
 ### handled from /docs or directly via DB.
 ### ================================================================
 
-@baseUrl = http://localhost:8000
+@baseUrl = http://172.18.9.205:8000
 
 ### ----------------------------------------------------------------
 ### Auth — capture token for all requests below
@@ -42,8 +38,7 @@ Content-Type: application/json
 {
   "mrn":             "OFFP{{$randomInt 100000 999999}}",
   "num_episodio":    "OFFE{{$randomInt 100000 999999}}",
-  "run":             "12345678-9",
-  "paciente":        "Soto Manuel",
+  "paciente":        "Perez Juan 128",
   "sexo":            "M",
   "fecha_nacimiento":"1980-06-15T00:00:00",
   "tipo":            "Ambulatorio",

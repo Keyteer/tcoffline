@@ -11,14 +11,17 @@
 # base64("demo:demodemo")
 @auth      = Basic ZGVtbzpkZW1vZGVtbw==
 
+###
 GET {{tcBaseUrl}}{{endpoint}}/getData
 Authorization: {{auth}}
 
+###
 GET {{tcBaseUrl}}{{endpoint}}/getDataTest
 Authorization: {{auth}}
 
+###
 POST {{tcBaseUrl}}{{endpoint}}/hl7inbound
 Authorization: {{auth}}
 Content-Type: application/json
 
-< ./hl7_BadMessage.json
+< ./hl7_a28.json

@@ -95,6 +95,36 @@ Cuando `AUTO_SYNC_ENABLED=false`, usar los endpoints del router `/sync` para dis
 | `GET /sync/connection-status` | Estado de conexión al central |
 | `GET /sync/stats` | Estadísticas de sincronización |
 
+## Bundle de despliegue (sin código fuente)
+
+Para distribuir el backend a un servidor de hospital sin necesidad de código fuente ni cuenta Docker, empaqueta las imágenes junto con los archivos de configuración.
+
+### Crear el bundle
+
+```powershell
+# 1. Crear la carpeta del bundle
+New-Item -ItemType Directory -Path ..\TcOffline-backend -Force
+
+# 2. Exportar las imágenes Docker
+docker save tcoffline-backend postgres:15-alpine -o ..\TcOffline-backend\tcoffline-images.tar
+
+# 3. Copiar el compose de producción y el .env
+Copy-Item docker-compose.prod.yml ..\TcOffline-backend\docker-compose.yml
+Copy-Item .env ..\TcOffline-backend\.env
+
+# 4. Crear README.txt para despliegue (Opcional)
+@"
+# How to run:
+
+  cd TcOffline-backend
+  docker load -i tcoffline-images.tar
+  docker compose up -d
+
+Editar .env antes de iniciar (CENTRAL_URL, JWT_SECRET_KEY, etc.)
+> .env contiene credenciales — no compartir públicamente
+"@ | Out-File -Encoding utf8 ..\TcOffline-backend\README.txt
+```
+
 ## Frontend React Native (Expo)
 
 ### Configuración inicial
