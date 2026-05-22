@@ -1,16 +1,18 @@
+from datetime import datetime, timedelta, timezone
+from typing import Optional
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials, OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 from jose import JWTError, jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session
 from app.db import get_db
-from app import models
+from app import models, schemas
 from app.settings import settings
-from datetime import datetime, timedelta
+
+ALGORITHM = "HS256"
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security_basic = HTTPBasic(auto_error=False)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -21,93 +23,63 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire, "type": "access"})
-    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_refresh_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "type": "refresh"})
-    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+def _decode_token(token: str) -> schemas.TokenData:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        user_id: int = payload.get("uid")
+        if username is None or user_id is None:
+            raise credentials_exception
+        return schemas.TokenData(username=username, user_id=user_id)
+    except JWTError:
+        raise credentials_exception
 
 
-def decode_token(token: str) -> dict:
-    return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-
-
-def authenticate_user(db: Session, username: str, password: str) -> models.User | None:
+def authenticate_user(db: Session, username: str, password: str) -> Optional[models.User]:
     user = db.query(models.User).filter(models.User.username == username).first()
     if not user or not verify_password(password, user.hashed_password):
         return None
-    return user
-
-
-def _get_user_from_jwt(token: str, db: Session) -> models.User | None:
-    try:
-        payload = decode_token(token)
-        if payload.get("type") != "access":
-            return None
-        username: str | None = payload.get("sub")
-        if username is None:
-            return None
-    except JWTError:
+    if not user.active:
         return None
-
-    return db.query(models.User).filter(models.User.username == username).first()
-
-
-def _get_user_from_basic(credentials: HTTPBasicCredentials, db: Session) -> models.User | None:
-    user = db.query(models.User).filter(models.User.username == credentials.username).first()
-    if not user or not verify_password(credentials.password, user.hashed_password):
-        return None
+    user.last_login = datetime.now(timezone.utc)
+    db.commit()
     return user
 
 
 def get_current_user(
-    request: Request,
-    token: str | None = Depends(oauth2_scheme),
-    credentials: HTTPBasicCredentials | None = Depends(security_basic),
-    db: Session = Depends(get_db),
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
 ) -> models.User:
-    """Authenticate via JWT Bearer token (preferred) or HTTP Basic (legacy)."""
-    user: models.User | None = None
-
-    # Try JWT first
-    if token:
-        user = _get_user_from_jwt(token, db)
-
-    # Fall back to Basic auth
-    if user is None and credentials:
-        user = _get_user_from_basic(credentials, db)
-
+    token_data = _decode_token(token)
+    user = db.query(models.User).filter(models.User.id == token_data.user_id).first()
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
+            detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     if not user.active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user"
-        )
-
-    user.last_login = datetime.utcnow()
-    db.commit()
-
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
     return user
 
 
 def get_current_active_user(
     current_user: models.User = Depends(get_current_user)
 ) -> models.User:
-    if not current_user.active:
-        raise HTTPException(status_code=403, detail="Inactive user")
     return current_user
 
 
@@ -120,23 +92,3 @@ def get_current_admin_user(
             detail="Only administrators can perform this action"
         )
     return current_user
-
-
-def get_optional_current_user(
-    request: Request,
-    token: str | None = Depends(oauth2_scheme),
-    credentials: HTTPBasicCredentials | None = Depends(security_basic),
-    db: Session = Depends(get_db),
-) -> models.User | None:
-    user: models.User | None = None
-
-    if token:
-        user = _get_user_from_jwt(token, db)
-
-    if user is None and credentials:
-        user = _get_user_from_basic(credentials, db)
-
-    if user is None or not user.active:
-        return None
-
-    return user

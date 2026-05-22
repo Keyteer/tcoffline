@@ -58,11 +58,10 @@ kill -9 <PID>
 
 ### Error de CORS en desarrollo
 
-**Verificación:**
+El backend acepta peticiones desde cualquier origen (`*`) — no requiere configuración adicional. Si sigues viendo errores CORS:
 
-1. Backend debe estar en `http://localhost:8000`
-2. Verifica que CORS esté configurado para la IP/puerto del frontend
-3. Reinicia el backend
+1. Verifica que el backend esté en `http://localhost:8000`
+2. Reinicia el backend
 
 ---
 

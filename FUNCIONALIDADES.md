@@ -146,7 +146,7 @@ La documentación completa de todos los endpoints HTTP — contratos, parámetro
 
 ### Multiidioma
 - **Idiomas soportados:** Español (es), Inglés (en)
-- **Implementación:** Backend (`app/config/`) y frontend React Native (`frontend_ReactNativ/src/config/`)
+- **Implementación:** Frontend React Native (`frontend_ReactNativ/src/config/`). El backend no internacionaliza mensajes — los errores de API se devuelven en inglés.
 
 ### Dictado por voz (Speech-to-Text)
 - **Descripción:** Botón de micrófono 🎤 junto a campos de texto en *Nuevo Episodio* y *Nota Clínica* para dictar el contenido en lugar de escribirlo.
@@ -176,7 +176,7 @@ La documentación completa de todos los endpoints HTTP — contratos, parámetro
 - **Efecto:** las pantallas principales respetan `LAYOUT_MAX` (ancho máximo del contenido) y se centran horizontalmente en tabletas y escritorio. `EpisodeInfoCard` y `SyncPipeline` adaptan su layout de columnas al `formFactor`.
 
 ### Seguridad
-- **Autenticación:** JWT con refresh tokens (Bearer token), fallback Basic Auth
+- **Autenticación:** JWT Bearer token (OAuth2 form login `POST /auth/token`). Sin refresh tokens — sesión expirada requiere re-login.
 - **Autorización:** Rutas protegidas, verificación de roles (admin/user)
 - **Validación:** Pydantic schemas en backend, prevención de inyección SQL via SQLAlchemy ORM
 - !! **HTTP:** Actualmente la comunicación entre back y frontend es por texto claro, habilitado en app.json con `expo-build-properties`.

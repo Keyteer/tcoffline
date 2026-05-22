@@ -45,12 +45,13 @@ class TestCreateEpisode:
         assert resp.status_code == 401
 
     def test_create_episode_accepts_stringified_data_json(self, client, user_headers):
+        import json as _json
         payload = make_episode_payload(num_episodio="EP-LEGACY-1")
         payload["data_json"] = '{"MRN":"MRN001","NumEpisodio":"EP-LEGACY-1"}'
 
         resp = client.post("/episodes", json=payload, headers=user_headers)
         assert resp.status_code == 201
-        assert resp.json()["data_json"]["NumEpisodio"] == "EP-LEGACY-1"
+        assert _json.loads(resp.json()["data_json"])["NumEpisodio"] == "EP-LEGACY-1"
 
 
 class TestListEpisodes:

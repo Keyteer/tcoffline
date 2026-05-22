@@ -74,33 +74,8 @@ async function storeFirst<T>(
   return stored;
 }
 
-let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
-
 async function getBaseUrl(): Promise<string> {
   return await getServerUrl();
-}
-
-async function tryRefreshToken(): Promise<boolean> {
-  const refreshToken = auth.getRefreshToken();
-  if (!refreshToken) return false;
-
-  try {
-    const baseUrl = await getBaseUrl();
-    const response = await fetchWithTimeout(`${baseUrl}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
-
-    if (!response.ok) return false;
-
-    const data = await response.json();
-    await auth.setTokens(data.access_token, data.refresh_token);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 let onUnauthorized: (() => void) | null = null;
@@ -125,34 +100,10 @@ async function fetchWithAuth(
     headers['Authorization'] = authHeader;
   }
 
-  let response = await fetchWithTimeout(`${baseUrl}${endpoint}`, {
+  const response = await fetchWithTimeout(`${baseUrl}${endpoint}`, {
     ...options,
     headers,
   });
-
-  // If 401, attempt a single token refresh and retry
-  if (response.status === 401 && auth.getRefreshToken()) {
-    if (!isRefreshing) {
-      isRefreshing = true;
-      refreshPromise = tryRefreshToken().finally(() => {
-        isRefreshing = false;
-        refreshPromise = null;
-      });
-    }
-
-    const refreshed = await (refreshPromise ?? Promise.resolve(false));
-
-    if (refreshed) {
-      const newAuthHeader = auth.getAuthHeader();
-      if (newAuthHeader) {
-        headers['Authorization'] = newAuthHeader;
-      }
-      response = await fetchWithTimeout(`${baseUrl}${endpoint}`, {
-        ...options,
-        headers,
-      });
-    }
-  }
 
   if (response.status === 401) {
     await auth.logout();
@@ -188,13 +139,13 @@ async function fetchWithAuth(
 export const api = {
   async verifyCredentials(credentials: LoginRequest): Promise<User> {
     const baseUrl = await getBaseUrl();
-    const loginResponse = await fetchWithTimeout(`${baseUrl}/auth/login`, {
+    const formBody = new URLSearchParams();
+    formBody.append('username', credentials.username);
+    formBody.append('password', credentials.password);
+    const loginResponse = await fetchWithTimeout(`${baseUrl}/auth/token`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: credentials.username,
-        password: credentials.password,
-      }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formBody.toString(),
     });
 
     if (!loginResponse.ok) {
@@ -203,7 +154,7 @@ export const api = {
     }
 
     const tokenData = await loginResponse.json();
-    await auth.setTokens(tokenData.access_token, tokenData.refresh_token);
+    await auth.setToken(tokenData.access_token);
 
     const userResponse = await fetchWithAuth('/auth/me');
     return userResponse.json();
@@ -347,11 +298,7 @@ export const api = {
   },
 
   async getCentralHealth(): Promise<{ status: string; central_url: string }> {
-    const baseUrl = await getBaseUrl();
-    const response = await fetchWithTimeout(`${baseUrl}/health/central`, {}, HEALTH_CHECK_TIMEOUT);
-    if (!response.ok) {
-      throw new APIError(response.status, 'Central health check failed');
-    }
+    const response = await fetchWithAuth('/health/central');
     return response.json();
   },
 

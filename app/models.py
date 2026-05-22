@@ -1,6 +1,5 @@
 from sqlalchemy import String, Integer, DateTime, Boolean, Text, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 from app.db import Base
 from passlib.context import CryptContext
@@ -20,8 +19,8 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     nombre: Mapped[str] = mapped_column(String(200), nullable=True)
     filtros: Mapped[str] = mapped_column(Text, nullable=True)
-    last_login: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    last_login: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
 
     clinical_notes: Mapped[list["ClinicalNote"]] = relationship(back_populates="author")
 
@@ -34,11 +33,6 @@ class User(Base):
 
 
 class Episode(Base):
-    """
-    Tabla unificada que almacena episodios completos con su JSON original.
-    Campos indexados del primer nivel para búsquedas y listados.
-    El JSON completo se almacena para acceso detallado a antecedentes e historia.
-    """
     __tablename__ = "episodes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -48,11 +42,11 @@ class Episode(Base):
 
     run: Mapped[str] = mapped_column(String(20), nullable=True)
     paciente: Mapped[str] = mapped_column(String(200), nullable=True)
-    fecha_nacimiento: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    fecha_nacimiento: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     sexo: Mapped[str] = mapped_column(String(10), nullable=True)
 
     tipo: Mapped[str] = mapped_column(String(50), nullable=True)
-    fecha_atencion: Mapped[datetime] = mapped_column(DateTime, nullable=True, index=True)
+    fecha_atencion: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     hospital: Mapped[str] = mapped_column(String(100), nullable=True)
     habitacion: Mapped[str] = mapped_column(String(50), nullable=True)
     cama: Mapped[str] = mapped_column(String(50), nullable=True)
@@ -61,23 +55,21 @@ class Episode(Base):
     profesional: Mapped[str] = mapped_column(String(200), nullable=True)
     motivo_consulta: Mapped[str] = mapped_column(Text, nullable=True)
 
-    data_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    data_json: Mapped[str] = mapped_column(Text, nullable=False)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
     synced_flag: Mapped[bool] = mapped_column(Boolean, default=False)
 
     clinical_notes: Mapped[list["ClinicalNote"]] = relationship(back_populates="episode", cascade="all, delete-orphan")
 
     def get_json_data(self) -> dict:
-        """Retorna el JSON completo parseado"""
-        if isinstance(self.data_json, str):
-            return json.loads(self.data_json)
-        return self.data_json
+        if isinstance(self.data_json, dict):
+            return self.data_json
+        return json.loads(self.data_json)
 
     def set_json_data(self, data: dict):
-        """Actualiza el JSON completo"""
-        self.data_json = data
+        self.data_json = json.dumps(data, ensure_ascii=False)
 
 
 class ClinicalNote(Base):
@@ -88,7 +80,7 @@ class ClinicalNote(Base):
     author_user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
     author_nombre: Mapped[str] = mapped_column(String(200), nullable=True)
     note_text: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
     synced_flag: Mapped[bool] = mapped_column(Boolean, default=False)
 
     episode: Mapped["Episode"] = relationship(back_populates="clinical_notes")
@@ -104,10 +96,14 @@ class OutboxEvent(Base):
     hl7_payload: Mapped[str] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending")
     priority: Mapped[int] = mapped_column(Integer, default=5)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), onupdate=func.now())
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
     last_error: Mapped[str] = mapped_column(Text, nullable=True)
+    # Stores the session user who created the event — used by outbox processor to populate HL7 OBR.24
+    author_user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+
+    author: Mapped["User"] = relationship("User", foreign_keys=[author_user_id])
 
 
 class SyncState(Base):
@@ -116,4 +112,4 @@ class SyncState(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     key: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     value: Mapped[str] = mapped_column(Text, nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=func.now(), onupdate=func.now())

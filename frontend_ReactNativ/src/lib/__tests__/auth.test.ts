@@ -1,26 +1,21 @@
-import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { auth } from '../auth';
 
-// Reset the in-memory cache before each test
 beforeEach(async () => {
   jest.clearAllMocks();
-  // Logout to clear the in-memory cache
   await auth.logout();
 });
 
 describe('auth', () => {
   describe('init', () => {
-    it('loads tokens from storage into cache', async () => {
+    it('loads token and user from storage into cache', async () => {
       (SecureStore.getItemAsync as jest.Mock)
-        .mockResolvedValueOnce('access-token-123')  // ACCESS_TOKEN_KEY
-        .mockResolvedValueOnce('refresh-token-456')  // REFRESH_TOKEN_KEY
-        .mockResolvedValueOnce(JSON.stringify({ username: 'doc', role: 'user' }));  // USER_KEY
+        .mockResolvedValueOnce('access-token-123')
+        .mockResolvedValueOnce(JSON.stringify({ username: 'doc', role: 'user' }));
 
       await auth.init();
 
       expect(auth.getAccessToken()).toBe('access-token-123');
-      expect(auth.getRefreshToken()).toBe('refresh-token-456');
       expect(auth.getUser()).toEqual({ username: 'doc', role: 'user' });
     });
 
@@ -30,32 +25,29 @@ describe('auth', () => {
       await auth.init();
 
       expect(auth.getAccessToken()).toBeNull();
-      expect(auth.getRefreshToken()).toBeNull();
       expect(auth.getUser()).toBeNull();
     });
   });
 
-  describe('setTokens / removeTokens', () => {
-    it('stores and retrieves tokens', async () => {
-      await auth.setTokens('at', 'rt');
+  describe('setToken / removeTokens', () => {
+    it('stores and retrieves the access token', async () => {
+      await auth.setToken('at');
 
       expect(auth.getAccessToken()).toBe('at');
-      expect(auth.getRefreshToken()).toBe('rt');
-      expect(SecureStore.setItemAsync).toHaveBeenCalledTimes(2);
+      expect(SecureStore.setItemAsync).toHaveBeenCalledTimes(1);
     });
 
-    it('clears tokens on removeTokens', async () => {
-      await auth.setTokens('at', 'rt');
+    it('clears the token on removeTokens', async () => {
+      await auth.setToken('at');
       await auth.removeTokens();
 
       expect(auth.getAccessToken()).toBeNull();
-      expect(auth.getRefreshToken()).toBeNull();
     });
   });
 
   describe('getAuthHeader', () => {
     it('returns Bearer header when token exists', async () => {
-      await auth.setTokens('my-token', 'refresh');
+      await auth.setToken('my-token');
       expect(auth.getAuthHeader()).toBe('Bearer my-token');
     });
 
@@ -66,7 +58,7 @@ describe('auth', () => {
 
   describe('isAuthenticated', () => {
     it('returns true when token is set', async () => {
-      await auth.setTokens('tok', 'ref');
+      await auth.setToken('tok');
       expect(auth.isAuthenticated()).toBe(true);
     });
 
@@ -102,13 +94,12 @@ describe('auth', () => {
 
   describe('logout', () => {
     it('clears everything', async () => {
-      await auth.setTokens('t', 'r');
+      await auth.setToken('t');
       await auth.setUser({ username: 'x', role: 'user' });
 
       await auth.logout();
 
       expect(auth.getAccessToken()).toBeNull();
-      expect(auth.getRefreshToken()).toBeNull();
       expect(auth.getUser()).toBeNull();
       expect(auth.isAuthenticated()).toBe(false);
     });

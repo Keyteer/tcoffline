@@ -24,20 +24,12 @@ def create_episode(
             detail="Episode with this number already exists"
         )
 
-    if not episode.ubicacion or not episode.ubicacion.strip():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ubicacion (location/CTLOC) is required"
-        )
-
     episode_data = episode.model_dump()
     episode_data.pop('pending_notes_count', None)
 
-    # Format patient name as "Apellido, Nombre"
     if 'paciente' in episode_data and episode_data['paciente']:
         parts = episode_data['paciente'].strip().split()
         if len(parts) >= 2:
-            # Assume last part is Nombre and everything else is Apellido
             nombre = parts[-1]
             apellido = ' '.join(parts[:-1])
             episode_data['paciente'] = f"{apellido}, {nombre}"
@@ -52,12 +44,13 @@ def create_episode(
         correlation_id=db_episode.num_episodio,
         hl7_payload=None,
         status="pending",
-        priority=5
+        priority=2,
+        author_user_id=current_user.id
     )
     db.add(outbox_event)
     db.commit()
 
-    db_episode_dict = {
+    return schemas.Episode(**{
         'id': db_episode.id,
         'mrn': db_episode.mrn,
         'num_episodio': db_episode.num_episodio,
@@ -79,9 +72,7 @@ def create_episode(
         'updated_at': db_episode.updated_at,
         'synced_flag': db_episode.synced_flag,
         'pending_notes_count': 0
-    }
-
-    return schemas.Episode(**db_episode_dict)
+    })
 
 
 @router.get("/types/unique", response_model=List[str])
@@ -89,19 +80,11 @@ def get_unique_episode_types(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
-    """Get unique episode types from episodes confirmed by central (synced).
-
-    Restricting to ``synced_flag=True`` ensures the values offered to the user
-    correspond to codes the central server actually accepts, avoiding stale
-    or invalid values left over from rejected local episodes.
-    """
     types = db.query(models.Episode.tipo).filter(
         models.Episode.tipo.isnot(None),
         models.Episode.tipo != ''
     ).distinct().order_by(models.Episode.tipo).all()
-
-    result = [tipo[0] for tipo in types if tipo[0] and tipo[0].strip()]
-    return result
+    return [tipo[0] for tipo in types if tipo[0] and tipo[0].strip()]
 
 
 @router.get("/locations/unique", response_model=List[str])
@@ -110,21 +93,25 @@ def get_unique_locations(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
-    """Get unique locations from episodes confirmed by central (synced).
-
-    Restricting to ``synced_flag=True`` avoids exposing locations created
-    locally that central later rejected (e.g. invalid CTLOC descriptions).
-    """
     query = db.query(models.Episode.ubicacion).filter(
         models.Episode.ubicacion.isnot(None),
         models.Episode.ubicacion != ''
     )
-
     if tipo:
         query = query.filter(models.Episode.tipo == tipo)
-
     locations = query.distinct().order_by(models.Episode.ubicacion).all()
-    result = [loc[0] for loc in locations if loc[0] and loc[0].strip()]
+    return [loc[0] for loc in locations if loc[0] and loc[0].strip()]
+
+
+def _parse_user_filtros(filtros: Optional[str]) -> dict:
+    if not filtros:
+        return {}
+    result = {}
+    for part in filtros.split("&"):
+        if "=" in part:
+            k, v = part.split("=", 1)
+            if k.strip() and v.strip():
+                result[k.strip()] = v.strip()
     return result
 
 
@@ -144,13 +131,22 @@ def list_episodes(
     if episode_type:
         query = query.filter(models.Episode.tipo == episode_type)
 
-    query = query.group_by(models.Episode.id).order_by(models.Episode.fecha_atencion.desc())
+    user_filtros = _parse_user_filtros(current_user.filtros)
+    if not episode_type and user_filtros.get("Tipo"):
+        query = query.filter(models.Episode.tipo == user_filtros["Tipo"])
+    if user_filtros.get("Hospital"):
+        query = query.filter(models.Episode.hospital == user_filtros["Hospital"])
+    if user_filtros.get("Local"):
+        query = query.filter(models.Episode.ubicacion == user_filtros["Local"])
+    if user_filtros.get("Profesional"):
+        query = query.filter(models.Episode.profesional == user_filtros["Profesional"])
 
+    query = query.group_by(models.Episode.id).order_by(models.Episode.fecha_atencion.desc())
     results = query.offset(skip).limit(limit).all()
 
     episodes_with_counts = []
     for episode, pending_count in results:
-        episode_dict = {
+        episodes_with_counts.append(schemas.Episode(**{
             'id': episode.id,
             'mrn': episode.mrn,
             'num_episodio': episode.num_episodio,
@@ -172,9 +168,7 @@ def list_episodes(
             'updated_at': episode.updated_at,
             'synced_flag': episode.synced_flag,
             'pending_notes_count': pending_count or 0
-        }
-        episodes_with_counts.append(schemas.Episode(**episode_dict))
-
+        }))
     return episodes_with_counts
 
 
@@ -186,12 +180,50 @@ def get_episode(
 ):
     episode = db.query(models.Episode).filter(models.Episode.id == episode_id).first()
     if not episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Episode not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
+    return {**episode.__dict__, "data": episode.get_json_data()}
 
-    return {
-        **episode.__dict__,
-        "data": episode.get_json_data()
-    }
+
+@router.put("/{episode_id}", response_model=schemas.Episode)
+def update_episode(
+    episode_id: int,
+    episode_update: schemas.EpisodeUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    db_episode = db.query(models.Episode).filter(models.Episode.id == episode_id).first()
+    if not db_episode:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
+
+    for field, value in episode_update.model_dump(exclude_unset=True).items():
+        setattr(db_episode, field, value)
+
+    db.commit()
+    db.refresh(db_episode)
+
+    outbox_event = models.OutboxEvent(
+        event_type="episode_updated",
+        correlation_id=db_episode.num_episodio,
+        hl7_payload=None,
+        status="pending",
+        priority=2,
+        author_user_id=current_user.id
+    )
+    db.add(outbox_event)
+    db.commit()
+
+    return db_episode
+
+
+@router.delete("/{episode_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_episode(
+    episode_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    db_episode = db.query(models.Episode).filter(models.Episode.id == episode_id).first()
+    if not db_episode:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
+    db.delete(db_episode)
+    db.commit()
+    return None

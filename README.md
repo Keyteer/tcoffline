@@ -8,7 +8,7 @@ Sistema offline para gestión de episodios clínicos con sincronización bidirec
 - Sincronización bidireccional automática con servidor central vía HL7 v2.5
 - Frontend móvil React Native (Android, iOS, Web) con modo oscuro
 - Backend containerizado (Docker + PostgreSQL)
-- Autenticación JWT con refresh tokens
+- Autenticación JWT (Bearer token)
 - Soporte multiidioma (Español / English)
 
 ## Arquitectura
@@ -19,7 +19,7 @@ Sistema offline para gestión de episodios clínicos con sincronización bidirec
 | Frontend | React Native (Expo SDK 54) |
 | Contenedores | Docker + Docker Compose |
 | Sincronización | HL7 v2.5 |
-| Auth | JWT Bearer token + HTTP Basic fallback |
+| Auth | JWT Bearer token |
 
 ```
 project/
@@ -33,7 +33,6 @@ project/
 │   └── routers/                 # Endpoints REST
 ├── frontend_ReactNativ/         # App móvil Expo
 ├── alembic/                     # Migraciones PostgreSQL
-├── central_mock/                # Mock del servidor central
 ├── tests/                       # Suite pytest (backend)
 ├── requests/                    # Archivos .http para pruebas manuales
 ├── Dockerfile

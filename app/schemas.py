@@ -1,27 +1,17 @@
-import json
 from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional, Any
 
 
-# --- Auth / Token schemas ---
-
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-
-class TokenResponse(BaseModel):
+class Token(BaseModel):
     access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
+    token_type: str
 
 
-class RefreshRequest(BaseModel):
-    refresh_token: str
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    user_id: Optional[int] = None
 
-
-# --- User schemas ---
 
 class UserBase(BaseModel):
     username: str
@@ -80,7 +70,7 @@ class EpisodeCreate(BaseModel):
     num_episodio: str
     run: Optional[str] = None
     paciente: Optional[str] = None
-    fecha_nacimiento: Optional[datetime] = None
+    fecha_nacimiento: datetime
     sexo: Optional[str] = None
     tipo: Optional[str] = None
     fecha_atencion: Optional[datetime] = None
@@ -91,19 +81,7 @@ class EpisodeCreate(BaseModel):
     estado: Optional[str] = None
     profesional: Optional[str] = None
     motivo_consulta: Optional[str] = None
-    data_json: dict
-
-    @field_validator('data_json', mode='before')
-    @classmethod
-    def parse_data_json(cls, v):
-        if isinstance(v, str):
-            try:
-                v = json.loads(v)
-            except json.JSONDecodeError as exc:
-                raise ValueError('data_json must be a valid JSON object') from exc
-        if not isinstance(v, dict):
-            raise ValueError('data_json must be a dictionary or JSON object string')
-        return v
+    data_json: str
 
     @field_validator('fecha_nacimiento', 'fecha_atencion', mode='before')
     @classmethod
@@ -113,8 +91,16 @@ class EpisodeCreate(BaseModel):
         if isinstance(v, str):
             try:
                 return datetime.fromisoformat(v.replace('Z', '+00:00'))
-            except:
+            except Exception:
                 return None
+        return v
+
+    @field_validator('data_json', mode='before')
+    @classmethod
+    def coerce_data_json(cls, v):
+        if isinstance(v, (dict, list)):
+            import json
+            return json.dumps(v, ensure_ascii=False)
         return v
 
 
@@ -128,26 +114,12 @@ class EpisodeUpdate(BaseModel):
     estado: Optional[str] = None
     profesional: Optional[str] = None
     motivo_consulta: Optional[str] = None
-    data_json: Optional[dict] = None
-
-    @field_validator('data_json', mode='before')
-    @classmethod
-    def parse_data_json(cls, v):
-        if v is None:
-            return None
-        if isinstance(v, str):
-            try:
-                v = json.loads(v)
-            except json.JSONDecodeError as exc:
-                raise ValueError('data_json must be a valid JSON object') from exc
-        if not isinstance(v, dict):
-            raise ValueError('data_json must be a dictionary or JSON object string')
-        return v
+    data_json: Optional[str] = None
 
 
 class Episode(EpisodeBase):
     id: int
-    data_json: dict
+    data_json: str
     created_at: datetime
     updated_at: datetime
     synced_flag: bool
@@ -155,9 +127,16 @@ class Episode(EpisodeBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator('data_json', mode='before')
+    @classmethod
+    def coerce_data_json(cls, v):
+        if isinstance(v, (dict, list)):
+            import json
+            return json.dumps(v, ensure_ascii=False)
+        return v
+
 
 class EpisodeDetail(Episode):
-    """Episode with complete JSON data"""
     data: dict
 
     model_config = ConfigDict(from_attributes=True)

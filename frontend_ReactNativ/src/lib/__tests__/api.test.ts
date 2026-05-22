@@ -56,9 +56,9 @@ function jsonResponse(status: number, body: unknown): Partial<Response> {
 // ---------------------------------------------------------------------------
 
 describe('api.verifyCredentials', () => {
-  it('stores tokens and returns the user on success', async () => {
+  it('stores the access token and returns the user on success', async () => {
     mockFetchSequence(
-      jsonResponse(200, { access_token: 'AT', refresh_token: 'RT' }),
+      jsonResponse(200, { access_token: 'AT', token_type: 'bearer' }),
       jsonResponse(200, { id: 1, username: 'doc', role: 'user' }),
     );
 
@@ -66,7 +66,6 @@ describe('api.verifyCredentials', () => {
 
     expect(user).toEqual({ id: 1, username: 'doc', role: 'user' });
     expect(auth.getAccessToken()).toBe('AT');
-    expect(auth.getRefreshToken()).toBe('RT');
   });
 
   it('throws APIError on bad credentials', async () => {
@@ -78,39 +77,16 @@ describe('api.verifyCredentials', () => {
 });
 
 // ---------------------------------------------------------------------------
-// fetchWithAuth: 401 → refresh → retry
+// fetchWithAuth: on 401 → logout + onUnauthorized
 // ---------------------------------------------------------------------------
 
 describe('fetchWithAuth (via api.getCurrentUser)', () => {
-  it('refreshes token on 401 and retries once', async () => {
-    await auth.setTokens('expired-AT', 'valid-RT');
-
-    const fetchMock = mockFetchSequence(
-      jsonResponse(401, { detail: 'expired' }),
-      jsonResponse(200, { access_token: 'new-AT', refresh_token: 'new-RT' }),
-      jsonResponse(200, { id: 1, username: 'doc', role: 'user' }),
-    );
-
-    const user = await api.getCurrentUser();
-    expect(user.username).toBe('doc');
-    expect(auth.getAccessToken()).toBe('new-AT');
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-
-    // Retry must use the new bearer token
-    const retryCall = fetchMock.mock.calls[2];
-    const retryHeaders = (retryCall[1] as RequestInit).headers as Record<string, string>;
-    expect(retryHeaders.Authorization).toBe('Bearer new-AT');
-  });
-
-  it('logs out and calls onUnauthorized when refresh fails', async () => {
-    await auth.setTokens('expired-AT', 'bad-RT');
+  it('logs out and calls onUnauthorized on 401', async () => {
+    await auth.setToken('expired-AT');
     const onUnauth = jest.fn();
     setOnUnauthorized(onUnauth);
 
-    mockFetchSequence(
-      jsonResponse(401, { detail: 'expired' }),
-      jsonResponse(401, { detail: 'refresh failed' }),
-    );
+    mockFetchSequence(jsonResponse(401, { detail: 'expired' }));
 
     await expect(api.getCurrentUser()).rejects.toMatchObject({ status: 401 });
     expect(auth.getAccessToken()).toBeNull();
@@ -120,7 +96,7 @@ describe('fetchWithAuth (via api.getCurrentUser)', () => {
   });
 
   it('throws APIError with parsed detail for non-401 errors', async () => {
-    await auth.setTokens('AT', 'RT');
+    await auth.setToken('AT');
     mockFetchSequence(jsonResponse(404, { detail: 'user not found' }));
 
     await expect(api.getCurrentUser()).rejects.toMatchObject({
@@ -130,7 +106,7 @@ describe('fetchWithAuth (via api.getCurrentUser)', () => {
   });
 
   it('joins validation-error arrays into a single message', async () => {
-    await auth.setTokens('AT', 'RT');
+    await auth.setToken('AT');
     mockFetchSequence(
       jsonResponse(422, {
         detail: [
@@ -153,13 +129,11 @@ describe('fetchWithAuth (via api.getCurrentUser)', () => {
 
 describe('store-first reads', () => {
   it('returns local data immediately and refreshes in background', async () => {
-    await auth.setTokens('AT', 'RT');
+    await auth.setToken('AT');
 
-    // Pre-seed the local store
     const cached = [{ id: 1, num_episodio: 'CACHED' }] as any;
     await localStore.setEpisodes(cached);
 
-    // Fresh server response with different data
     let resolveFetch!: (v: Response) => void;
     const fetchPromise = new Promise<Response>((r) => {
       resolveFetch = r;
@@ -169,15 +143,12 @@ describe('store-first reads', () => {
     const onUpdate = jest.fn();
     const result = await api.getEpisodes(undefined, onUpdate);
 
-    // Immediate return is the cached value
     expect(result).toEqual(cached);
     expect(onUpdate).not.toHaveBeenCalled();
 
-    // Now resolve the background fetch with fresh data
     const fresh = [{ id: 2, num_episodio: 'FRESH' }];
     resolveFetch(jsonResponse(200, fresh) as Response);
 
-    // Let the background promise chain flush
     await new Promise((r) => setImmediate(r));
 
     expect(onUpdate).toHaveBeenCalledWith(fresh);
@@ -185,7 +156,7 @@ describe('store-first reads', () => {
   });
 
   it('keeps local data when background fetch fails', async () => {
-    await auth.setTokens('AT', 'RT');
+    await auth.setToken('AT');
     const cached = [{ id: 1, num_episodio: 'KEEP' }] as any;
     await localStore.setEpisodes(cached);
 
@@ -201,7 +172,7 @@ describe('store-first reads', () => {
   });
 
   it('skips local store for filtered queries', async () => {
-    await auth.setTokens('AT', 'RT');
+    await auth.setToken('AT');
     const filtered = [{ id: 9, num_episodio: 'FILT' }];
     mockFetchSequence(jsonResponse(200, filtered));
 

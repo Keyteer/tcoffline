@@ -3,7 +3,6 @@ import { Platform } from 'react-native';
 import type { User } from '../types';
 
 const ACCESS_TOKEN_KEY = 'trakcare_access_token';
-const REFRESH_TOKEN_KEY = 'trakcare_refresh_token';
 const USER_KEY = 'trakcare_user';
 
 // Web fallback using localStorage
@@ -37,13 +36,11 @@ export interface StoredUser {
 
 // In-memory cache for synchronous access
 let cachedAccessToken: string | null = null;
-let cachedRefreshToken: string | null = null;
 let cachedUser: StoredUser | null = null;
 
 export const auth = {
   async init(): Promise<void> {
     cachedAccessToken = await storage.getItem(ACCESS_TOKEN_KEY);
-    cachedRefreshToken = await storage.getItem(REFRESH_TOKEN_KEY);
     const userStr = await storage.getItem(USER_KEY);
     cachedUser = userStr ? JSON.parse(userStr) : null;
   },
@@ -52,22 +49,14 @@ export const auth = {
     return cachedAccessToken;
   },
 
-  getRefreshToken(): string | null {
-    return cachedRefreshToken;
-  },
-
-  async setTokens(accessToken: string, refreshToken: string): Promise<void> {
+  async setToken(accessToken: string): Promise<void> {
     cachedAccessToken = accessToken;
-    cachedRefreshToken = refreshToken;
     await storage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    await storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   },
 
   async removeTokens(): Promise<void> {
     cachedAccessToken = null;
-    cachedRefreshToken = null;
     await storage.removeItem(ACCESS_TOKEN_KEY);
-    await storage.removeItem(REFRESH_TOKEN_KEY);
   },
 
   getAuthHeader(): string | null {

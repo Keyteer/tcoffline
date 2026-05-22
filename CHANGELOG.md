@@ -2,6 +2,17 @@
 
 ---
 
+## [2.0.0-rc09] - 2026-05-20
+
+### Modificado
+- **Backend reemplazado por backend_lan** — código fuente del servidor hospitalario migrado a la versión LAN (`backend_lan`). Autenticación simplificada a JWT Bearer sin refresh tokens; el login usa OAuth2 form data (`POST /auth/token`). Se eliminan middlewares de solo lectura, mDNS/discovery e i18n del servidor.
+- **Frontend adaptado** — `auth.ts` y `api.ts` actualizados para el nuevo flujo de login (form-urlencoded, un solo token). En caso de sesión expirada (401) se cierra sesión directamente sin intentar renovar token.
+- **Variables de entorno actualizadas** — `.env` alineado con las claves reales del backend (`SECRET_KEY`, `ACCESS_TOKEN_EXPIRE_MINUTES`). Eliminadas claves obsoletas (`JWT_SECRET_KEY`, `JWT_REFRESH_TOKEN_EXPIRE_DAYS`, `CORS_ORIGINS`, etc.).
+- **`.env.prod` añadido** — plantilla de configuración para despliegue en producción con placeholders seguros.
+- **Tests actualizados** — suite backend (pytest) y frontend (Jest) ajustados al nuevo backend; 113 tests backend y 202 tests frontend en verde.
+
+---
+
 ## [2.0.0-rc08] - 2026-05-18
 
 ### Agregado

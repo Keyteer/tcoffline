@@ -31,11 +31,9 @@ Variables relevantes en `.env`:
 | `DATABASE_URL` | Cadena de conexión PG (el default de docker-compose ya está preconfigurado) |
 | `CENTRAL_URL` | URL del servidor TrakCare central |
 | `CENTRAL_API_USERNAME` / `CENTRAL_API_PASSWORD` | Credenciales para la API central |
-| `JWT_SECRET_KEY` | Se autogenera si no se define; definir explícitamente en producción |
-| `CORS_ORIGINS` | Orígenes permitidos, separados por coma. Usar `*` solo en desarrollo |
-| `AUTO_SYNC_ENABLED` | `true`: sync automático al iniciar y en background. `false`: solo endpoints manuales |
+| `SECRET_KEY` | Clave secreta JWT; generar con `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración de sesión en minutos (default: 480) |
 | `LOG_LEVEL` | Nivel de logging: `WARNING` (prod) o `DEBUG` (dev) |
-| `LOG_VERBOSE` | `true`: logs de requests HTTP y conexiones. `false`: solo errores/warnings |
 
 ---
 
@@ -70,22 +68,18 @@ docker compose up --build backend
 Editar `.env` y reiniciar:
 
 ```bash
-# dev: sin sync automático, logs verbosos
-AUTO_SYNC_ENABLED=false
+# dev: logs verbosos
 LOG_LEVEL=DEBUG
-LOG_VERBOSE=true
 
-# prod: sync automático, logs mínimos
-AUTO_SYNC_ENABLED=true
+# prod: logs mínimos
 LOG_LEVEL=WARNING
-LOG_VERBOSE=false
 ```
 
 ```bash
 docker compose restart backend
 ```
 
-Cuando `AUTO_SYNC_ENABLED=false`, usar los endpoints del router `/sync` para disparar sincronizaciones manualmente:
+Para disparar sincronizaciones manualmente desde el router `/sync`:
 
 | Endpoint | Descripción |
 |---|---|
@@ -120,7 +114,7 @@ Copy-Item .env ..\TcOffline-backend\.env
   docker load -i tcoffline-images.tar
   docker compose up -d
 
-Editar .env antes de iniciar (CENTRAL_URL, JWT_SECRET_KEY, etc.)
+Editar .env o .env.prod antes de iniciar (CENTRAL_URL, SECRET_KEY, etc.)
 > .env contiene credenciales — no compartir públicamente
 "@ | Out-File -Encoding utf8 ..\TcOffline-backend\README.txt
 ```

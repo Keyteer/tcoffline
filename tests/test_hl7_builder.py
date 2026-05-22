@@ -17,7 +17,7 @@ def builder() -> HL7MessageBuilder:
 class TestMSH:
     def test_msh_structure_and_version(self, builder):
         msh = builder.build_msh_segment("ADT", "A28", control_id="CID-1")
-        assert msh.startswith("MSH|^~\\&|OFFLINE|LOCAL|CENTRAL|HOSPITAL|")
+        assert msh.startswith("MSH|^~\\&|OFFLINE|LAN|CENTRAL|HOSPITAL|")
         assert "|ADT^A28|CID-1|P|2.5.1" in msh
 
     def test_msh_generates_control_id_when_absent(self, builder):

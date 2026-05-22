@@ -1,24 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.pool import QueuePool
 from app.settings import settings
 
-
-def _build_engine():
-    url = settings.DATABASE_URL
-    kwargs: dict = {}
-
-    if "sqlite" in url:
-        kwargs["connect_args"] = {"check_same_thread": False}
-    else:
-        # Connection pooling for PostgreSQL
-        kwargs["pool_size"] = 10
-        kwargs["max_overflow"] = 20
-        kwargs["pool_pre_ping"] = True
-
-    return create_engine(url, **kwargs)
-
-
-engine = _build_engine()
+engine = create_engine(
+    settings.DATABASE_URL,
+    poolclass=QueuePool,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+    pool_recycle=3600,
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

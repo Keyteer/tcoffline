@@ -130,8 +130,8 @@ def inactive_user(db) -> models.User:
 # ---------------------------------------------------------------------------
 
 def auth_headers(client: TestClient, username: str, password: str = DEFAULT_PASSWORD) -> dict:
-    """Login via /auth/login and return Bearer token headers."""
-    resp = client.post("/auth/login", json={"username": username, "password": password})
+    """Login via /auth/token and return Bearer token headers."""
+    resp = client.post("/auth/token", data={"username": username, "password": password})
     assert resp.status_code == 200, f"Login failed for {username}: {resp.text}"
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

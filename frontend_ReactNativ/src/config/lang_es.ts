@@ -242,7 +242,7 @@ export const lang_es = {
     noDocument: 'Sin Documento',
     sex: 'Sexo',
     birthDate: 'Fecha de Nacimiento',
-    consultReason: 'Motivo de Consulta',
+    birthDateRequired: 'La fecha de nacimiento es requerida',
     required: 'Este campo es requerido',
     createSuccess: 'Episodio creado exitosamente',
     createError: 'Error al crear el episodio',

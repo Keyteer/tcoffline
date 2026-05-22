@@ -37,11 +37,11 @@ docker compose build test
 | Archivo | Cubre |
 |---------|-------|
 | `tests/conftest.py` | Fixtures: base de datos de test, cliente HTTP, usuarios |
-| `tests/test_auth.py` | Login, JWT, refresh token, roles, `/auth/me` |
+| `tests/test_auth.py` | Login, JWT, roles, `/auth/me` |
 | `tests/test_episodes.py` | CRUD episodios, filtros, paginación |
 | `tests/test_notes.py` | CRUD notas clínicas, relación con episodio |
 | `tests/test_sync.py` | Estado de sincronización, trigger manual, retry, conteos sobre la BD real (`pending_events`, `failed_events`) |
-| `tests/test_general.py` | Health checks (incluye `/health/central` con `httpx.Client` mockeado), settings globales, discovery endpoint |
+| `tests/test_general.py` | Health checks (incluye `/health/central` con `httpx.Client` mockeado, requiere auth), settings globales |
 | `tests/test_hl7_builder.py` | Unit tests de `HL7MessageBuilder`: MSH, escape de separadores, normalización de género, PID/PV1/PV2, mensajes A28/A01/A03/ORU (sin BD ni HTTP) |
 
 ---
@@ -77,7 +77,7 @@ npm run test:coverage
 | `src/lib/__tests__/serverConfig.test.ts` | Persistencia de URL del servidor local |
 | `src/lib/__tests__/localStore.test.ts` | Envelope `{data, timestamp}`, lecturas/escrituras por scope, `clearAll` preservando `outbox_queue` |
 | `src/lib/__tests__/outbox.test.ts` | Enqueue/remove/clear, FIFO, ids únicos, `localEpisodePseudoId`, `retargetNotesForLocalEpisode` |
-| `src/lib/__tests__/api.test.ts` | `verifyCredentials`, refresh + retry en 401, `APIError` (404/422), patrón store-first con `onUpdate`, bypass de local store para queries filtradas |
+| `src/lib/__tests__/api.test.ts` | `verifyCredentials`, logout en 401, `APIError` (404/422), patrón store-first con `onUpdate`, bypass de local store para queries filtradas |
 | `src/lib/__tests__/_inMemoryStorage.ts` | Helper compartido: reemplaza el mock de `AsyncStorage` por un `Map` con estado real (ignorado por Jest según `testPathIgnorePatterns`) |
 
 ---

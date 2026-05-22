@@ -204,6 +204,10 @@ export function NewEpisodeScreen({ navigation }: Props) {
       setError(t.newEpisode.clinicUnitRequired);
       return;
     }
+    if (!birthDate) {
+      setError(t.newEpisode.birthDateRequired);
+      return;
+    }
     if (!noDocument && rutError) {
       setError(rutError);
       return;
@@ -559,7 +563,7 @@ export function NewEpisodeScreen({ navigation }: Props) {
                 </TouchableOpacity>
               </View>
               <View style={styles.half}>
-                <Text style={styles.label}>{t.newEpisode.birthDate}</Text>
+                <Text style={styles.label}>{t.newEpisode.birthDate} <Text style={styles.required}>*</Text></Text>
                 <View style={styles.inputRow}>
                   <TouchableOpacity
                     style={[styles.input, styles.inputRowField, styles.datePickerButton]}

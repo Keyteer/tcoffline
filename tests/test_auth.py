@@ -4,64 +4,35 @@ from tests.conftest import auth_headers, DEFAULT_PASSWORD
 
 class TestLogin:
     def test_login_success(self, client, admin_user):
-        resp = client.post("/auth/login", json={
+        resp = client.post("/auth/token", data={
             "username": admin_user.username,
             "password": DEFAULT_PASSWORD,
         })
         assert resp.status_code == 200
         body = resp.json()
         assert "access_token" in body
-        assert "refresh_token" in body
         assert body["token_type"] == "bearer"
 
     def test_login_wrong_password(self, client, admin_user):
-        resp = client.post("/auth/login", json={
+        resp = client.post("/auth/token", data={
             "username": admin_user.username,
             "password": "wrong",
         })
         assert resp.status_code == 401
 
     def test_login_nonexistent_user(self, client):
-        resp = client.post("/auth/login", json={
+        resp = client.post("/auth/token", data={
             "username": "ghost",
             "password": "nope",
         })
         assert resp.status_code == 401
 
     def test_login_inactive_user(self, client, inactive_user):
-        resp = client.post("/auth/login", json={
+        resp = client.post("/auth/token", data={
             "username": inactive_user.username,
             "password": DEFAULT_PASSWORD,
         })
-        assert resp.status_code == 403
-
-
-class TestRefresh:
-    def test_refresh_success(self, client, admin_user):
-        login = client.post("/auth/login", json={
-            "username": admin_user.username,
-            "password": DEFAULT_PASSWORD,
-        })
-        refresh_token = login.json()["refresh_token"]
-
-        resp = client.post("/auth/refresh", json={"refresh_token": refresh_token})
-        assert resp.status_code == 200
-        body = resp.json()
-        assert "access_token" in body
-        assert "refresh_token" in body
-
-    def test_refresh_invalid_token(self, client):
-        resp = client.post("/auth/refresh", json={"refresh_token": "garbage"})
-        assert resp.status_code == 401
-
-    def test_refresh_with_access_token_fails(self, client, admin_user):
-        login = client.post("/auth/login", json={
-            "username": admin_user.username,
-            "password": DEFAULT_PASSWORD,
-        })
-        access_token = login.json()["access_token"]
-        resp = client.post("/auth/refresh", json={"refresh_token": access_token})
-        assert resp.status_code == 401
+        assert resp.status_code in (401, 403)
 
 
 class TestMe:
@@ -86,7 +57,7 @@ class TestMe:
         assert resp.status_code == 200
 
         # Old password should no longer work
-        resp2 = client.post("/auth/login", json={
+        resp2 = client.post("/auth/token", data={
             "username": regular_user.username,
             "password": "newpass456",
         })

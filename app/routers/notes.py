@@ -17,10 +17,7 @@ def create_clinical_note(
 ):
     episode = db.query(models.Episode).filter(models.Episode.id == episode_id).first()
     if not episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Episode not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
 
     db_note = models.ClinicalNote(
         episode_id=episode_id,
@@ -37,7 +34,8 @@ def create_clinical_note(
         correlation_id=str(db_note.id),
         hl7_payload=None,
         status="pending",
-        priority=3
+        priority=3,
+        author_user_id=current_user.id
     )
     db.add(outbox_event)
     db.commit()
@@ -55,10 +53,7 @@ def list_episode_notes(
 ):
     episode = db.query(models.Episode).filter(models.Episode.id == episode_id).first()
     if not episode:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Episode not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
 
     notes = db.query(
         models.ClinicalNote,
@@ -73,9 +68,8 @@ def list_episode_notes(
         models.ClinicalNote.created_at.desc()
     ).offset(skip).limit(limit).all()
 
-    result = []
-    for note, username, nombre in notes:
-        result.append({
+    return [
+        {
             "id": note.id,
             "episode_id": note.episode_id,
             "author_user_id": note.author_user_id,
@@ -84,9 +78,9 @@ def list_episode_notes(
             "note_text": note.note_text,
             "created_at": note.created_at,
             "synced_flag": note.synced_flag
-        })
-
-    return result
+        }
+        for note, username, nombre in notes
+    ]
 
 
 @router.get("/{episode_id}/notes/{note_id}", response_model=schemas.ClinicalNote)
@@ -100,10 +94,6 @@ def get_clinical_note(
         models.ClinicalNote.id == note_id,
         models.ClinicalNote.episode_id == episode_id
     ).first()
-
     if not note:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Clinical note not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Clinical note not found")
     return note

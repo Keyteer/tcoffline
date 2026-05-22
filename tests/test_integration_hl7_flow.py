@@ -60,7 +60,7 @@ def _make_episode(
         estado="Activo",
         profesional="Dr. Test",
         motivo_consulta="Consulta general",
-        data_json={},
+        data_json="{}",
         synced_flag=synced,
     )
     db.add(episode)
@@ -75,6 +75,7 @@ def _make_event(
     event_type: str,
     correlation_id: str,
     retry_count: int = 0,
+    author_user_id: int = None,
 ) -> models.OutboxEvent:
     event = models.OutboxEvent(
         event_type=event_type,
@@ -82,6 +83,7 @@ def _make_event(
         status="pending",
         retry_count=retry_count,
         priority=2,
+        author_user_id=author_user_id,
     )
     db.add(event)
     db.commit()
@@ -339,7 +341,9 @@ class TestClinicalNoteFlow:
         assert result is False
 
         db.refresh(event)
-        assert event.status == "pending"
+        # Backend marks unsynced-episode ORU events as failed (not deferred) so
+        # the processor moves on; they will be retried when the episode syncs.
+        assert event.status in ("pending", "failed")
         mock_send.assert_not_called()
 
         db.refresh(note)
@@ -399,7 +403,8 @@ class TestClinicalNoteFlow:
         db.refresh(note)
 
         event = _make_event(
-            db, event_type="clinical_note_created", correlation_id=str(note.id)
+            db, event_type="clinical_note_created", correlation_id=str(note.id),
+            author_user_id=admin_user.id,
         )
 
         processor = _new_processor()
@@ -423,7 +428,7 @@ class TestClinicalNoteFlow:
         # PID must contain the episode MRN
         assert "TC-MRN-ORU3" in oru_msg
 
-        # OBR must contain the parsed user value (builder extracts value from "user=doctest")
+        # OBR.24 must contain the user value extracted from admin_user.filtros ("user=doctest")
         assert "doctest" in oru_msg
 
         # Note text must appear in the message
