@@ -56,16 +56,20 @@ export async function loadServerUrl(): Promise<string> {
 }
 
 export async function testConnection(url: string): Promise<boolean> {
+  const normalized = url.replace(/\/+$/, '');
+  const target = `${normalized}/health`;
   try {
-    const normalized = url.replace(/\/+$/, '');
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), CONNECTION_TEST_TIMEOUT);
-    const response = await fetch(`${normalized}/health`, {
+    const response = await fetch(target, {
       signal: controller.signal,
     });
     clearTimeout(timeout);
+    console.log(`[serverConfig] testConnection ${target} → ${response.status}`);
     return response.ok;
-  } catch {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    console.error(`[serverConfig] testConnection ${target} FAILED → ${msg}`);
     return false;
   }
 }

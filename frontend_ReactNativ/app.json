@@ -16,9 +16,12 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSSpeechRecognitionUsageDescription": "Permite a $(PRODUCT_NAME) reconocer voz para dictar texto en formularios cl?nicos.",
-        "NSMicrophoneUsageDescription": "Permite a $(PRODUCT_NAME) usar el micr?fono para dictado por voz."
+        "NSMicrophoneUsageDescription": "Permite a $(PRODUCT_NAME) usar el micr?fono para dictado por voz.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       },
-      "bundleIdentifier": "com.anonymous.TcOffline"
+      "bundleIdentifier": "com.intersystems.tcoffline"
     },
     "android": {
       "adaptiveIcon": {
