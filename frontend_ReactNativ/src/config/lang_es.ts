@@ -320,7 +320,7 @@ export const lang_es = {
     currentServer: 'Servidor actual:',
     tryingDefault: 'Conectando a',
     serverAddress: 'Dirección del Servidor',
-    manualPlaceholder: 'tcoffline.local:8000',
+    manualPlaceholder: 'fcoffline.local:8000',
     manualHint: 'Ingrese IP o hostname. El puerto 8000 y protocolo http:// se agregan automáticamente si no se especifican.',
     testAndConnect: 'Probar y Conectar',
     connectionFailed: 'No se pudo conectar al servidor. Verifique la dirección y que el servidor esté corriendo.',

@@ -121,7 +121,7 @@ export function Header({ navigation }: Props) {
     <>
       <View style={styles.header}>
         <View style={styles.topRow}>
-          <Text style={styles.titleText}>TrakCare Offline</Text>
+          <Text style={styles.titleText}>FastCare Offline</Text>
           <View style={[styles.left, styles.statusWrap]}>
             <View
               style={[

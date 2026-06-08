@@ -323,7 +323,7 @@ export const lang_en: TranslationKeys = {
     currentServer: 'Current server:',
     tryingDefault: 'Connecting to',
     serverAddress: 'Server Address',
-    manualPlaceholder: 'tcoffline.local:8000',
+    manualPlaceholder: 'fcoffline.local:8000',
     manualHint: 'Enter IP or hostname. Port 8000 and http:// protocol are added automatically if not specified.',
     testAndConnect: 'Test & Connect',
     connectionFailed: 'Could not connect to the server. Check the address and make sure the server is running.',
