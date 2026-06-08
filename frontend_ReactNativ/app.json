@@ -15,8 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSSpeechRecognitionUsageDescription": "Permite a $(PRODUCT_NAME) reconocer voz para dictar texto en formularios cl?nicos.",
-        "NSMicrophoneUsageDescription": "Permite a $(PRODUCT_NAME) usar el micr?fono para dictado por voz.",
+        "NSSpeechRecognitionUsageDescription": "Allows $(PRODUCT_NAME) to recognize speech for dictating text in clinical forms.",
+        "NSMicrophoneUsageDescription": "Allows $(PRODUCT_NAME) to use the microphone for voice dictation.",
+        "NSPhotoLibraryUsageDescription": "Allows $(PRODUCT_NAME) to access the photo library.",
+        "NSFaceIDUsageDescription": "Allows $(PRODUCT_NAME) to use Face ID to sign in.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
         }
@@ -44,8 +46,8 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "Permite a $(PRODUCT_NAME) usar el micrófono para dictado por voz.",
-          "speechRecognitionPermission": "Permite a $(PRODUCT_NAME) reconocer voz para dictar texto en formularios clínicos.",
+          "microphonePermission": "Allows $(PRODUCT_NAME) to use the microphone for voice dictation.",
+          "speechRecognitionPermission": "Allows $(PRODUCT_NAME) to recognize speech for dictating text in clinical forms.",
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
           ]
@@ -63,7 +65,7 @@
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Permite a $(PRODUCT_NAME) usar Face ID para iniciar sesión."
+          "faceIDPermission": "Allows $(PRODUCT_NAME) to use Face ID to sign in."
         }
       ]
     ]
