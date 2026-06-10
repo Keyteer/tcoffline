@@ -2,6 +2,29 @@
 
 ---
 
+## [2.0.0-rc10] - 2026-06-09
+
+### Agregado
+
+#### Indicador de SSL Warning en frontend móvil
+
+- **Nuevo estado en el badge del `Header`**: 4 estados — `OFFLINE` (rojo) / `LOCAL` (amarillo) / `Advertencia SSL` (ámbar) / `ONLINE` (verde). El estado SSL Warning se activa cuando el servidor central es accesible pero opera con certificado inválido o autofirmado.
+- **`SyncPipeline` — enlace con estado warning**: el enlace Hospital → Central HIS muestra línea ámbar con badge `!` cuando el estado es `warning`, en lugar de verde (online) o rojo (offline).
+- **`useConnectionStatus` expone `centralStatus`**: el hook retorna `centralStatus: 'online' | 'warning' | 'offline'` derivado del campo `status` de `/health/central`. `isOnline` sigue siendo `true` para `online` y `warning`. Compatible con backends que no implementan `status`.
+- **`SyncStats.connection.status`**: campo opcional `status?: 'online' | 'warning' | 'offline'` añadido a la interfaz `SyncStats.connection`; `is_online` se conserva para compatibilidad.
+- **Traducciones**: clave `sslWarning` agregada a las secciones `header` y `syncPipeline` en `lang_es.ts` / `lang_en.ts`.
+
+#### Archivos modificados
+
+- `frontend_ReactNativ/src/types/index.ts`
+- `frontend_ReactNativ/src/config/lang_es.ts`
+- `frontend_ReactNativ/src/config/lang_en.ts`
+- `frontend_ReactNativ/src/hooks/useConnectionStatus.ts`
+- `frontend_ReactNativ/src/components/Header.tsx`
+- `frontend_ReactNativ/src/components/SyncPipeline.tsx`
+
+---
+
 ## [2.0.0-rc09] - 2026-05-20
 
 ### Modificado

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
+  Alert,
 } from 'react-native';
 import { ArrowLeft, CloudOff } from 'react-native-feather';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,7 +26,7 @@ import { LAYOUT_MAX } from '../hooks/useResponsive';
 import { api } from '../lib/api';
 import { outbox } from '../lib/outbox';
 import type { OutboxEntry } from '../lib/outbox';
-import type { EpisodeDetail, ClinicalNote, EpisodeCreateRequest, ClinicalNoteCreateRequest } from '../types';
+import type { EpisodeDetail, ClinicalNote, EpisodeCreateRequest, ClinicalNoteCreateRequest, PredefinedText } from '../types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation/types';
@@ -38,7 +39,7 @@ type Props = {
 export function ClinicalNoteScreen({ navigation, route }: Props) {
   const { id } = route.params;
   const isLocalEpisode = id < 0;
-  const { isReadOnlyMode } = useUser();
+  const { isReadOnlyMode, user: currentUser } = useUser();
   const { t, language } = useLanguage();
   const { colors } = useTheme();
   const { isBackendReachable } = useConnectivity();
@@ -53,6 +54,10 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState('');
+  const [isEditSaving, setIsEditSaving] = useState(false);
+  const [predefinedTexts, setPredefinedTexts] = useState<PredefinedText[]>([]);
 
   // Build a synthetic EpisodeDetail from a queued createEpisode outbox entry
   // so the user can keep working with episodes that have not yet been synced.
@@ -125,6 +130,52 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     await loadPendingLocalNotes();
   };
 
+  const handleEditNote = (note: ClinicalNote) => {
+    if (note.synced_flag) {
+      Alert.alert(t.common.error, t.clinicalNote.cannotEditSynced);
+      return;
+    }
+    setEditingNoteId(note.id);
+    setEditingText(note.note_text);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingNoteId || !editingText.trim()) return;
+    setIsEditSaving(true);
+    try {
+      await api.updateClinicalNote(id, editingNoteId, { note_text: editingText });
+      setEditingNoteId(null);
+      setEditingText('');
+      await loadNotes();
+    } catch (err) {
+      Alert.alert(t.common.error, err instanceof Error ? err.message : t.clinicalNote.saveError);
+    } finally {
+      setIsEditSaving(false);
+    }
+  };
+
+  const handleDeleteNote = (noteId: number) => {
+    Alert.alert(
+      t.clinicalNote.deleteNote,
+      t.clinicalNote.deleteConfirm,
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: t.common.delete,
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.deleteClinicalNote(id, noteId);
+              await loadNotes();
+            } catch (err) {
+              Alert.alert(t.common.error, err instanceof Error ? err.message : t.clinicalNote.saveError);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
     const interval = setInterval(async () => {
       const hasPendingNotes = notes.some((note) => !note.synced_flag) || pendingLocalNotes.length > 0;
@@ -180,6 +231,8 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
       }
     };
     loadData();
+    // Load predefined texts in background (non-blocking)
+    api.listPredefinedTexts().then(setPredefinedTexts).catch(() => {});
   }, [id]);
 
   const handleSubmit = async () => {
@@ -226,7 +279,13 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
 
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return '-';
-    const date = new Date(dateString);
+    // Server returns ISO strings without timezone indicator (UTC) — append 'Z'
+    // so the JS engine treats them as UTC rather than local time.
+    const normalized =
+      dateString.includes('T') && !/Z$|[+-]\d{2}:\d{2}$/.test(dateString)
+        ? dateString + 'Z'
+        : dateString;
+    const date = new Date(normalized);
     const day = date.getDate().toString().padStart(2, '0');
     const month = new Intl.DateTimeFormat(language, { month: 'long' }).format(date);
     const year = date.getFullYear();
@@ -289,6 +348,66 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
     noteBadgeTextLocal: { color: colors.error },
     noteText: { fontSize: 14, color: colors.text, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace' },
     noteAuthorName: { fontSize: 13, color: colors.textSecondary, marginTop: 8 },
+    noteActions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+    noteActionBtn: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 6,
+      borderWidth: 1,
+    },
+    noteActionEdit: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+    noteActionDelete: { borderColor: colors.error, backgroundColor: colors.errorLight },
+    noteActionText: { fontSize: 12, fontWeight: '600' },
+    noteActionEditText: { color: colors.primary },
+    noteActionDeleteText: { color: colors.error },
+    editBox: {
+      marginTop: 8,
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.inputBorder,
+      borderRadius: 8,
+      padding: 10,
+    },
+    editInput: {
+      fontSize: 14,
+      color: colors.text,
+      minHeight: 80,
+      textAlignVertical: 'top',
+      fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    },
+    editButtonRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+    editSaveBtn: {
+      flex: 1,
+      backgroundColor: colors.primary,
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: 'center',
+    },
+    editSaveBtnText: { color: '#FFF', fontWeight: '600', fontSize: 13 },
+    editCancelBtn: {
+      flex: 1,
+      backgroundColor: colors.surfaceSecondary,
+      borderRadius: 8,
+      paddingVertical: 10,
+      alignItems: 'center',
+    },
+    editCancelBtnText: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
+    // Predefined texts picker
+    ptPicker: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 10,
+    },
+    ptChip: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.borderSecondary,
+      backgroundColor: colors.surfaceSecondary,
+    },
+    ptChipText: { fontSize: 13, color: colors.text },
     // Read only banner
     readOnlyBanner: {
       backgroundColor: colors.warningLight,
@@ -470,10 +589,58 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.noteText}>{note.note_text}</Text>
+                  {editingNoteId === note.id ? (
+                    <View style={styles.editBox}>
+                      <TextInput
+                        style={styles.editInput}
+                        value={editingText}
+                        onChangeText={setEditingText}
+                        multiline
+                        autoFocus
+                        editable={!isEditSaving}
+                      />
+                      <View style={styles.editButtonRow}>
+                        <TouchableOpacity
+                          style={styles.editCancelBtn}
+                          onPress={() => { setEditingNoteId(null); setEditingText(''); }}
+                          disabled={isEditSaving}
+                        >
+                          <Text style={styles.editCancelBtnText}>{t.clinicalNote.editCancel}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.editSaveBtn, isEditSaving && { opacity: 0.6 }]}
+                          onPress={handleSaveEdit}
+                          disabled={isEditSaving}
+                        >
+                          {isEditSaving
+                            ? <ActivityIndicator color="#FFF" size="small" />
+                            : <Text style={styles.editSaveBtnText}>{t.clinicalNote.editSave}</Text>}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={styles.noteText}>{note.note_text}</Text>
+                  )}
                   {note.author_nombre ? (
                     <Text style={styles.noteAuthorName}>{note.author_nombre}</Text>
                   ) : null}
+                  {/* Show edit/delete only for own, unsynced, server notes */}
+                  {!isLocalNote && !note.synced_flag && note.author_user_id === currentUser?.id && editingNoteId !== note.id && (
+                    <View style={styles.noteActions}>
+                      <TouchableOpacity
+                        style={[styles.noteActionBtn, styles.noteActionEdit]}
+                        onPress={() => handleEditNote(note)}
+                      >
+                        <Text style={[styles.noteActionText, styles.noteActionEditText]}>{t.clinicalNote.editNote}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.noteActionBtn, styles.noteActionDelete]}
+                        onPress={() => handleDeleteNote(note.id)}
+                      >
+                        <Text style={[styles.noteActionText, styles.noteActionDeleteText]}>{t.clinicalNote.deleteNote}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
                 );
               })}
@@ -491,6 +658,20 @@ export function ClinicalNoteScreen({ navigation, route }: Props) {
           {/* New Note Form */}
           <View style={styles.formCard}>
             <Text style={styles.formLabel}>{t.clinicalNote.newNote}</Text>
+            {/* Predefined texts picker */}
+            {predefinedTexts.filter(pt => pt.active).length > 0 && !isReadOnlyMode && (
+              <View style={styles.ptPicker}>
+                {predefinedTexts.filter(pt => pt.active).map(pt => (
+                  <TouchableOpacity
+                    key={pt.id}
+                    style={styles.ptChip}
+                    onPress={() => setNoteText(prev => prev ? prev + '\n' + pt.content : pt.content)}
+                  >
+                    <Text style={styles.ptChipText}>{pt.title}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
             <View style={styles.textareaWrapper}>
               <TextInput
                 style={[styles.textarea, isReadOnlyMode && styles.textareaDisabled]}

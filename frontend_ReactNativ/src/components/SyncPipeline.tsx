@@ -35,6 +35,11 @@ export function SyncPipeline({ syncStats }: Props) {
 
   const link1Ok = isBackendReachable;
   const link2Ok = !!syncStats?.connection.is_online;
+  // Tri-state for the hospital server → central HIS link.
+  // Falls back to 'offline' when stats aren't loaded yet or the backend
+  // doesn't expose the `status` field.
+  const link2Status: 'online' | 'warning' | 'offline' =
+    syncStats?.connection.status ?? (link2Ok ? 'online' : 'offline');
 
   const tp = t.syncPipeline;
   const fmtAgo = (iso: string | null) => (iso ? formatTimeAgo(iso, language) : tp.never);
@@ -99,6 +104,7 @@ export function SyncPipeline({ syncStats }: Props) {
     },
     lineOk: { backgroundColor: colors.success },
     lineDown: { backgroundColor: colors.error },
+    lineWarning: { backgroundColor: colors.warning },
     badge: {
       position: 'absolute',
       top: -2,
@@ -137,22 +143,46 @@ export function SyncPipeline({ syncStats }: Props) {
     },
   });
 
-  const renderLink = (ok: boolean, badgeText: string | null, caption: string) => (
-    <View style={styles.linkCol}>
-      <View style={[styles.line, ok ? styles.lineOk : styles.lineDown]} />
-      {!ok && (
-        <View style={styles.xMark}>
-          <X width={10} height={10} color={colors.error} />
-        </View>
-      )}
-      {!!badgeText && (
-        <View style={[styles.badge, !ok && { top: -16 }]}>
-          <Text style={styles.badgeText}>{badgeText}</Text>
-        </View>
-      )}
-      <Text style={styles.linkCaption}>{caption}</Text>
-    </View>
-  );
+  const renderLink = (
+    ok: boolean,
+    badgeText: string | null,
+    caption: string,
+    status?: 'online' | 'warning' | 'offline',
+  ) => {
+    // Resolve the line style from the tri-state when provided, else fall back
+    // to the binary ok/down logic used for link1.
+    const resolvedStatus = status ?? (ok ? 'online' : 'offline');
+    const lineStyle =
+      resolvedStatus === 'online'
+        ? styles.lineOk
+        : resolvedStatus === 'warning'
+        ? styles.lineWarning
+        : styles.lineDown;
+    const isDown = resolvedStatus === 'offline';
+    const isWarning = resolvedStatus === 'warning';
+
+    return (
+      <View style={styles.linkCol}>
+        <View style={[styles.line, lineStyle]} />
+        {isDown && (
+          <View style={styles.xMark}>
+            <X width={10} height={10} color={colors.error} />
+          </View>
+        )}
+        {isWarning && (
+          <View style={[styles.xMark, { borderColor: colors.warning, backgroundColor: colors.warningLight }]}>
+            <Text style={{ fontSize: 10, color: colors.warning, fontWeight: '700' }}>!</Text>
+          </View>
+        )}
+        {!!badgeText && (
+          <View style={[styles.badge, (isDown || isWarning) && { top: -16 }]}>
+            <Text style={styles.badgeText}>{badgeText}</Text>
+          </View>
+        )}
+        <Text style={styles.linkCaption}>{caption}</Text>
+      </View>
+    );
+  };
 
   const outboxBadge =
     pendingOutbox > 0 ? tp.pendingInOutbox.replace('{n}', String(pendingOutbox)) : null;
@@ -173,12 +203,16 @@ export function SyncPipeline({ syncStats }: Props) {
     ? tp.lostConnection.replace('{ago}', fmtMs(lastBackendLossAt))
     : tp.lostConnection.replace(', {ago}', '');
   // link2 (Local server → Central HIS):
-  //   up   → "sent {ago}" using last_upstream_sync from the hospital server.
-  //   down → "Lost connection, {ago}" using last_downstream_sync as the
-  //          best proxy for "last time the link was alive".
-  const link2Caption = link2Ok
-    ? tp.lastSent.replace('{ago}', fmtAgo(syncStats?.last_upstream_sync ?? null))
-    : tp.lostConnection.replace('{ago}', fmtAgo(syncStats?.last_downstream_sync ?? null));
+  //   online   → "sent {ago}" using last_upstream_sync from the hospital server.
+  //   warning  → "SSL Warning" — connection alive but cert is invalid.
+  //   offline  → "Lost connection, {ago}" using last_downstream_sync as the
+  //              best proxy for "last time the link was alive".
+  const link2Caption =
+    link2Status === 'online'
+      ? tp.lastSent.replace('{ago}', fmtAgo(syncStats?.last_upstream_sync ?? null))
+      : link2Status === 'warning'
+      ? tp.sslWarning
+      : tp.lostConnection.replace('{ago}', fmtAgo(syncStats?.last_downstream_sync ?? null));
 
   return (
     <View style={styles.container}>
@@ -200,7 +234,7 @@ export function SyncPipeline({ syncStats }: Props) {
         {/* Only draw the link2 line when link1 is up, but always render the
             flex spacer so the Local node stays centred regardless. */}
         {link1Ok
-          ? renderLink(link2Ok, eventsBadge, link2Caption)
+          ? renderLink(link2Ok, eventsBadge, link2Caption, link2Status)
           : <View style={styles.linkCol} />}
 
         <View style={styles.nodeCol}>

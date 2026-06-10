@@ -17,13 +17,18 @@ type Props = {
 };
 
 export function Header({ navigation }: Props) {
-  const { isOnline } = useConnectionStatus();
+  const { isOnline, centralStatus } = useConnectionStatus();
   const { isBackendReachable } = useConnectivity();
-  // 3 estados: offline (sin servidor local) → local (servidor local OK pero
-  // central caído) → online (cadena completa). LOCAL usa la paleta warning,
-  // igual que los mensajes de "pendientes".
+  // 3 estados de texto:
+  //   offline → sin servidor local (rojo)
+  //   local   → servidor local OK pero central caído (amarillo)
+  //   online  → cadena completa; badge verde o ámbar si centralStatus === 'warning'
   const connectionState: 'offline' | 'local' | 'online' =
-    !isBackendReachable ? 'offline' : !isOnline ? 'local' : 'online';
+    !isBackendReachable
+      ? 'offline'
+      : centralStatus === 'offline'
+      ? 'local'
+      : 'online';
   const { user: currentUser, updateUser } = useUser();
   const storedUser = auth.getUser();
   const { theme, toggleTheme, colors } = useTheme();
@@ -72,12 +77,12 @@ export function Header({ navigation }: Props) {
       paddingVertical: 4,
       borderRadius: 12,
     },
-    badgeOnline: { backgroundColor: colors.badgeOnlineBg },
+    badgeOnline: { backgroundColor: connectionState === 'online' && centralStatus === 'warning' ? colors.warningLight : colors.badgeOnlineBg },
     badgeOffline: { backgroundColor: colors.badgeOfflineBg },
     badgeLocal: { backgroundColor: colors.badgeLocalBg },
     badgeDot: { width: 6, height: 6, borderRadius: 3, marginRight: 4 },
     badgeText: { fontSize: 11, fontWeight: '700' },
-    badgeOnlineText: { color: colors.badgeOnlineText },
+    badgeOnlineText: { color: connectionState === 'online' && centralStatus === 'warning' ? colors.warning : colors.badgeOnlineText },
     badgeOfflineText: { color: colors.badgeOfflineText },
     badgeLocalText: { color: colors.badgeLocalText },
     langButton: {
@@ -139,7 +144,7 @@ export function Header({ navigation }: Props) {
                   {
                     backgroundColor:
                       connectionState === 'online'
-                        ? '#22C55E'
+                        ? centralStatus === 'warning' ? colors.warning : '#22C55E'
                         : connectionState === 'local'
                         ? colors.warning
                         : '#EF4444',

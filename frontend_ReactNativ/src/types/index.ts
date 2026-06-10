@@ -149,6 +149,11 @@ export interface SyncStats {
   last_upstream_sync: string | null;
   connection: {
     is_online: boolean;
+    /** Tri-state status returned by the hospital server when it has the
+     *  SSL-retry feature: 'online' = valid cert, 'warning' = reachable but
+     *  self-signed / invalid cert, 'offline' = unreachable.
+     *  Absent on older backends — fall back to `is_online` boolean. */
+    status?: 'online' | 'warning' | 'offline';
     last_check: string | null;
   };
 }
@@ -184,4 +189,54 @@ export interface EpisodeCreateRequest {
 
 export interface ClinicalNoteCreateRequest {
   note_text: string;
+}
+
+export interface ClinicalNoteUpdateRequest {
+  note_text: string;
+}
+
+export interface PredefinedText {
+  id: number;
+  title: string;
+  content: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PredefinedTextCreate {
+  title: string;
+  content: string;
+}
+
+export interface PredefinedTextUpdate {
+  title?: string;
+  content?: string;
+  active?: boolean;
+}
+
+export interface SystemConfigResponse {
+  central_url: string;
+  central_api_endpoint: string;
+  central_hl7_endpoint: string;
+  central_users_endpoint: string;
+  central_api_username: string;
+  central_api_password: string;
+  health_check_interval: number;
+  downstream_sync_interval: number;
+  upstream_sync_interval: number;
+  max_retries: number;
+}
+
+export interface SystemConfigUpdate {
+  central_url?: string;
+  central_api_endpoint?: string;
+  central_hl7_endpoint?: string;
+  central_users_endpoint?: string;
+  central_api_username?: string;
+  central_api_password?: string;
+  health_check_interval?: number;
+  downstream_sync_interval?: number;
+  upstream_sync_interval?: number;
+  max_retries?: number;
 }

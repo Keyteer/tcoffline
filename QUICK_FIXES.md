@@ -140,7 +140,7 @@ adb logcat *:E ReactNativeJS:V AndroidRuntime:V
 
 **Filtrar solo errores de la app (PowerShell):**
 ```powershell
-adb logcat *:E ReactNativeJS:V 2>&1 | Select-String "ReactNativeJS|FATAL|com.anonymous"
+adb logcat *:E ReactNativeJS:V 2>&1 | Select-String "ReactNativeJS|FATAL|com.intersystems"
 ```
 
 Salir con `Ctrl+C`.

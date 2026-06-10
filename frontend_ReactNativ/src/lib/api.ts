@@ -9,6 +9,12 @@ import type {
   EpisodeCreateRequest,
   ClinicalNote,
   ClinicalNoteCreateRequest,
+  ClinicalNoteUpdateRequest,
+  PredefinedText,
+  PredefinedTextCreate,
+  PredefinedTextUpdate,
+  SystemConfigResponse,
+  SystemConfigUpdate,
   SyncStatus,
   SyncStats,
   HealthResponse,
@@ -246,6 +252,20 @@ export const api = {
     return data;
   },
 
+  async updateClinicalNote(episodeId: number, noteId: number, data: ClinicalNoteUpdateRequest): Promise<ClinicalNote> {
+    const response = await fetchWithAuth(`/episodes/${episodeId}/notes/${noteId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  async deleteClinicalNote(episodeId: number, noteId: number): Promise<void> {
+    await fetchWithAuth(`/episodes/${episodeId}/notes/${noteId}`, {
+      method: 'DELETE',
+    });
+  },
+
   async getClinicalNotes(
     episodeId: number,
     onUpdate?: (data: ClinicalNote[]) => void
@@ -369,5 +389,43 @@ export const api = {
       (d) => localStore.setEpisodeTypes(d),
       onUpdate,
     );
+  },
+
+  async listPredefinedTexts(): Promise<PredefinedText[]> {
+    const response = await fetchWithAuth('/predefined-texts');
+    return response.json();
+  },
+
+  async createPredefinedText(data: PredefinedTextCreate): Promise<PredefinedText> {
+    const response = await fetchWithAuth('/predefined-texts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  async updatePredefinedText(id: number, data: PredefinedTextUpdate): Promise<PredefinedText> {
+    const response = await fetchWithAuth(`/predefined-texts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  async deletePredefinedText(id: number): Promise<void> {
+    await fetchWithAuth(`/predefined-texts/${id}`, { method: 'DELETE' });
+  },
+
+  async getAdminConfig(): Promise<SystemConfigResponse> {
+    const response = await fetchWithAuth('/admin/config');
+    return response.json();
+  },
+
+  async updateAdminConfig(config: SystemConfigUpdate): Promise<SystemConfigResponse> {
+    const response = await fetchWithAuth('/admin/config', {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    });
+    return response.json();
   },
 };

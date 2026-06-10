@@ -26,7 +26,7 @@ import type { EpisodeCreateRequest } from '../types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
 
-import { EPISODES_REFRESH_INTERVAL } from '../config/env';
+import { EPISODES_REFRESH_INTERVAL, PAGE_SIZE } from '../config/env';
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'Episodes'>;
@@ -48,6 +48,7 @@ export function EpisodesScreen({ navigation }: Props) {
   const [enableNewEpisodeButton, setEnableNewEpisodeButton] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const filterEpisodes = (list: Episode[], query: string): Episode[] => {
     const q = query.toLowerCase().trim();
@@ -188,6 +189,7 @@ export function EpisodesScreen({ navigation }: Props) {
         ? allEpisodes.filter((e) => e.tipo === activeTab)
         : allEpisodes;
     setEpisodes(filterEpisodes(base, searchQuery));
+    setVisibleCount(PAGE_SIZE);
   }, [activeTab, allEpisodes, searchQuery]);
 
   const onRefresh = async () => {
@@ -416,7 +418,7 @@ export function EpisodesScreen({ navigation }: Props) {
           <Text style={styles.emptyText}>{t.episodes.noEpisodesInCategory}</Text>
         ) : (
           <FlatList
-            data={episodes}
+            data={episodes.slice(0, visibleCount)}
             key={`cols-${columns}`}
             numColumns={columns}
             columnWrapperStyle={columns > 1 ? { gap: 12 } : undefined}
@@ -429,6 +431,12 @@ export function EpisodesScreen({ navigation }: Props) {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
             }
+            onEndReached={() => {
+              if (visibleCount < episodes.length) {
+                setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, episodes.length));
+              }
+            }}
+            onEndReachedThreshold={0.3}
             showsVerticalScrollIndicator={false}
           />
         )}

@@ -31,3 +31,7 @@ export const API_REQUEST_TIMEOUT =
 /** Timeout (ms) for lightweight health checks (used for connectivity polling). */
 export const HEALTH_CHECK_TIMEOUT =
   Number(process.env.EXPO_PUBLIC_HEALTH_CHECK_TIMEOUT) || 8_000;
+
+/** Number of items loaded per page in scrollable lists (episodes, users). */
+export const PAGE_SIZE =
+  Number(process.env.EXPO_PUBLIC_PAGE_SIZE) || 20;

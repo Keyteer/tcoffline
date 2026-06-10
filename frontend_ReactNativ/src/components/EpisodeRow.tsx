@@ -16,7 +16,13 @@ export function EpisodeRow({ episode, onPress }: Props) {
 
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return '-';
-    const date = new Date(dateString);
+    // Server returns ISO strings without timezone indicator (UTC) — append 'Z'
+    // so the JS engine treats them as UTC rather than local time.
+    const normalized =
+      dateString.includes('T') && !/Z$|[+-]\d{2}:\d{2}$/.test(dateString)
+        ? dateString + 'Z'
+        : dateString;
+    const date = new Date(normalized);
     const day = date.getDate().toString().padStart(2, '0');
     const month = new Intl.DateTimeFormat(language, { month: 'short' }).format(date);
     const year = date.getFullYear();
@@ -77,14 +83,8 @@ export function EpisodeRow({ episode, onPress }: Props) {
     middleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 6 },
     detail: { fontSize: 12, color: colors.textSecondary },
     detailLabel: { fontWeight: '600' },
-    bottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    bottomRow: { flexDirection: 'row', alignItems: 'center' },
     dateText: { fontSize: 12, color: colors.textTertiary },
-    statusBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-    statusBadgeNormal: { backgroundColor: colors.successLight },
-    statusBadgePending: { backgroundColor: colors.warningLight },
-    statusText: { fontSize: 11, fontWeight: '600' },
-    statusTextNormal: { color: colors.success },
-    statusTextPending: { color: colors.warning },
   });
 
   return (
@@ -141,13 +141,6 @@ export function EpisodeRow({ episode, onPress }: Props) {
 
       <View style={styles.bottomRow}>
         <Text style={styles.dateText}>{formatDateTime(episode.fecha_atencion)}</Text>
-        <View style={[styles.statusBadge, hasUnsynedNotes ? styles.statusBadgePending : styles.statusBadgeNormal]}>
-          <Text style={[styles.statusText, hasUnsynedNotes ? styles.statusTextPending : styles.statusTextNormal]}>
-            {hasUnsynedNotes
-              ? t.episodes.syncStatus.pendingCount
-              : episode.estado || t.episodeStatus['Activo']}
-          </Text>
-        </View>
       </View>
     </TouchableOpacity>
   );

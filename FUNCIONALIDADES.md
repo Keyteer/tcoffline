@@ -175,6 +175,15 @@ La documentación completa de todos los endpoints HTTP — contratos, parámetro
 - **Descripción:** Hook `src/hooks/useResponsive.ts` con breakpoints centralizados que expone `formFactor` (phone / tabletPortrait / tabletLandscape / desktop), `columns`, `isTablet`, `isWide`.
 - **Efecto:** las pantallas principales respetan `LAYOUT_MAX` (ancho máximo del contenido) y se centran horizontalmente en tabletas y escritorio. `EpisodeInfoCard` y `SyncPipeline` adaptan su layout de columnas al `formFactor`.
 
+### Indicadores de conexión
+- **Badge del `Header`** (todas las pantallas): 4 estados según la cadena de conectividad completa:
+  - `OFFLINE` (rojo) — servidor local no accesible.
+  - `LOCAL` (amarillo) — servidor local OK pero servidor central caído.
+  - `Advertencia SSL` (ámbar) — servidor central accesible pero opera con certificado inválido/autofirmado.
+  - `ONLINE` (verde) — cadena completa con TLS válido.
+  - Implementado en `src/components/Header.tsx` + `src/hooks/useConnectionStatus.ts`.
+- **`SyncPipeline`** (`src/components/SyncPipeline.tsx`, solo en `EpisodesScreen`): diagrama App → Servidor local → Servidor central. Cada enlace muestra estado OK (verde), Warning (ámbar `!`) u offline (rojo `✕`). Badges con backlog en cada nodo; captions con timestamp del último envío/pérdida.
+
 ### Seguridad
 - **Autenticación:** JWT Bearer token (OAuth2 form login `POST /auth/token`). Sin refresh tokens — sesión expirada requiere re-login.
 - **Autorización:** Rutas protegidas, verificación de roles (admin/user)
